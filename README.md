@@ -21,7 +21,7 @@ Basic command line usage is available by using the ```--help``` switch.
 ```bash
 $ python ip_list_to_set.py --help
 >> usage: ip_list_to_set.py [-h] [-d IP_LIST] [-l] [-m DSM] -u USERNAME -p
-                         PASSWORD [-t TENANT]
+                         PASSWORD [-t TENANT] [--dryrun] [--verbose]
 
 Deep Security uses the concept of IP Lists to make firewall rules easier to
 administer. The AWS WAF uses a similar concept of IP Sets as rule conditions.
@@ -46,6 +46,10 @@ optional arguments:
                         access
   -t TENANT, --tenant TENANT
                         The name of the Deep Security tenant/account
+  --dryrun              Do a dry run of the command. This will not make any
+                        changes to your AWS WAF service
+  --verbose             Enabled verbose output for the script. Useful for
+                        debugging
 ```
 
 The first step is to find the ID Deep Security uses for the IP List you want to sync to an AWS WAF IP Set. You can do that using the ```--list``` switch.
