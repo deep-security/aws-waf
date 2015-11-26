@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 ## ip_list_to_set.py
 
-Deep Security can host a number of IP Lists (Policies > ... > IP Lists). These IP Lists can be very useful as AWS WAF IP Sets for matching rule conditions. 
+Deep Security can host a number of IP Lists (Policies > Common Objects > Lists > IP Lists). These IP Lists can be very useful as AWS WAF IP Sets for matching rule conditions. 
 
 This utility will convert an IP List (IPv6 and IPv4) from Deep Security to a minimized IP Set for use in an AWS WAF rule.
 
