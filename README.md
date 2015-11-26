@@ -92,3 +92,5 @@ $ python ip_list_to_set.py -d 152 -u USERNAME -p PASSWORD -t TENANT --dryrun
 >> Converted 41 IP List entries to 718 IP Set entries
 Updated IP Set [AMAZON eu-west-1] with ID [9ee53a08-cdaf-4881-a111-3d99b58065e4]
 ```
+
+Now the IP Set has been created in AWS WAF and can be used in a AWS WAC WACL rule as a matching condition. AWS was detailed documentation on [the next steps you need to take](http://docs.aws.amazon.com/waf/latest/developerguide/web-acl.html).
