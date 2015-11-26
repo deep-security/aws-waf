@@ -73,18 +73,22 @@ Deep Security doesn't enforce the same size limits on IP Lists as AWS WAF does o
 
 In these cases, the best solution is to divide the list within Deep Security and re-run the script with the new ID(s).
 
+A good practice to adopt is to make a dry run before committing any changes. You can do list using the ```--dryrun``` switch.
+
 ```bash
-$ python ip_list_to_set.py -d 152 -u USERNAME -p PASSWORD -t TENANT
->> Found Deep Security IP list [IpList 152 <AMAZON eu-west-1>]
-New AWS WAF change token [ed8d5d55-5b3a-456e-b7b5-39f73a5450ae]
-Expanded CIDR block 46.51.128.0/18 to 64 IP Set compatible blocks
-Expanded CIDR block 46.51.192.0/20 to 16 IP Set compatible blocks
-...
-Expanded CIDR block 176.34.128.0/17 to 128 IP Set compatible blocks
-Expanded CIDR block 178.236.0.0/20 to 16 IP Set compatible blocks
-Expanded CIDR block 185.48.120.0/22 to 4 IP Set compatible blocks
+$ python ip_list_to_set.py -d 152 -u USERNAME -p PASSWORD -t TENANT --dryrun
+>> ***********************************************************************
+* DRY RUN ENABLED. NO CHANGES WILL BE MADE
+***********************************************************************
 Converted 41 IP List entries to 718 IP Set entries
-Change [ed8d5d55-5b3a-456e-b7b5-39f73a5450ae] requested
+Will request the addition of 718 entries in IP Set 9ee53a08-cdaf-4881-a111-3d99b58065e4
+Will update IP Set [AMAZON eu-west-1] with ID [9ee53a08-cdaf-4881-a111-3d99b58065e4]
 ```
 
-If you want to see what changes the script is going to push to AWS WAF **before** actually making any changes, use the ```--dryrun``` switch.
+If you're comfortable with the changes, you can then re-run the script without the ```--dryrun``` switch and commit the changes.
+
+```bash
+$ python ip_list_to_set.py -d 152 -u USERNAME -p PASSWORD -t TENANT --dryrun
+>> Converted 41 IP List entries to 718 IP Set entries
+Updated IP Set [AMAZON eu-west-1] with ID [9ee53a08-cdaf-4881-a111-3d99b58065e4]
+```

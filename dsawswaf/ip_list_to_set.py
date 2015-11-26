@@ -41,7 +41,10 @@ def parse_args(str_to_parse=None):
 
 class ScriptContext():
 	"""
-	Context for IP List to IP Set script
+	Context for IP List to IP Set script.
+
+	Using an object makes is easy to avoid any globals and clarifies 
+	the intention of the script
 	"""
 	def __init__(self, args):
 		self.args = args
@@ -56,8 +59,10 @@ class ScriptContext():
 		self.waf = self._connect_to_aws_waf()
 		self.ip_lists = self._get_available_ds_lists()
 
+	def __del__(self): self.clean_up() # clean up on object destruction
+
 	def _log(self, message, priority=False):
-		# @TODO add actual logging
+		# @TODO add actual logging :-)
 		if priority or self.args.verbose:
 			print message
 
@@ -77,6 +82,7 @@ class ScriptContext():
 		aws_credentials_path = [ '{}/.aws/credentials'.format(os.environ['HOME']), "{}\.aws\credentials".format(os.environ['HOME']) ]
 		for path in aws_credentials_path:
 			if os.path.exists(path) and not credentials:
+				self._log("Reading AWS credentials from {}".format(path))
 				with open(path) as fh:
 					for line in fh:
 						if line.startswith('aws_access_key_id'):
@@ -90,6 +96,7 @@ class ScriptContext():
 		dsm = None
 		try:
 			dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, username=self.args.username, password=self.args.password, tenant=self.args.tenant) 
+			self._log("Connected to the Deep Security Manager at {}".format(self.args.dsm))
 		except Exception, err: pass # @TODO handle this exception gracefully
 
 		return dsm
@@ -99,10 +106,12 @@ class ScriptContext():
 		try:
 			aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'])
 			waf = aws.client('waf') 
+			self._log("Connected to AWS WAF")
 		except Exception, err: 
 			# @TODO handle this exception gracefully
 			try:
 				waf = boto3.client('waf')
+				self._log("Connected to AWS WAF")
 			except Exception, err: pass # @TODO handle this exception gracefully	
 
 		return waf
@@ -116,6 +125,7 @@ class ScriptContext():
 		if self.dsm:
 			self.dsm.get_ip_lists()
 			ip_lists = self.dsm.ip_lists
+			self._log("Cached the available IP Lists from Deep Security")
 
 		return ip_lists
 
@@ -165,8 +175,8 @@ class ScriptContext():
 
 		# yes, you can figure the strata out algorithmically but this
 		# is a little more readable and will definitely help with long
-		# term maintenance which is way more important!s
-		strata = { 
+		# term maintenance which is way more important!
+		strata = { # defines the CIDR octet blocks
 			32: { 'type': 32, 'times': 1, 'size': 1 },
 			31: { 'type': 32, 'times': 2, 'size': 1 },
 			30: { 'type': 32, 'times': 4, 'size': 1 },
@@ -252,7 +262,7 @@ class ScriptContext():
 			else:
 				waf_compatible += self._expand_cidr(cidr)
 
-		self._log("Converted {} IP List entries to {} IP Set entries".format(len(ds_list.addresses), len(waf_compatible)))
+		self._log("Converted {} IP List entries to {} IP Set entries".format(len(ds_list.addresses), len(waf_compatible)), priority=True)
 		return waf_compatible
 
 	def _convert_ds_addresses_to_waf(self, ds_list, convert='ignore'):
@@ -294,12 +304,14 @@ class ScriptContext():
 			change_token = self._get_aws_waf_change_token()
 
 			if change_token:
+				list_created = False
 				if not current_ip_set:
 					if not self.args.dryrun:
 						self._log("Requesting the creation of [{}]".format(ds_list.name))
 						response = self.waf.create_ip_set(Name=ds_list.name, ChangeToken=change_token)
 						if response:
 							self.ip_sets.append(response['IPSet'])
+							list_created = True
 							current_ip_set = response['IPSet']['IPSetId']
 							change_token = self._get_aws_waf_change_token()
 					else:
@@ -317,10 +329,17 @@ class ScriptContext():
 						else:
 							self._log("Will request the addition of {} entries in IP Set {}".format(len(updates), current_ip_set), priority=True)
 
+					if not self.args.dryrun:
+						msg_verb = "Created" if list_created else "Updated"
+						self._log("{} IP Set [{}] with ID [{}]".format(msg_verb, ds_list.name, current_ip_set), priority=True)
+					else:
+						msg_verb = "create" if list_created else "update"
+						self._log("Will {} IP Set [{}] with ID [{}]".format(msg_verb, ds_list.name, current_ip_set), priority=True)
+
 	def print_lists(self):
 		"""
 		Pretty print the IP lists from Deep Security and
-		the AWS WAF WACLS
+		the AWS WAF IP Sets
 		"""
 		print "\nAvailable Deep Security IP Lists"
 		print "================================"
