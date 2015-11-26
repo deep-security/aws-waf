@@ -86,3 +86,5 @@ Expanded CIDR block 185.48.120.0/22 to 4 IP Set compatible blocks
 Converted 41 IP List entries to 718 IP Set entries
 Change [ed8d5d55-5b3a-456e-b7b5-39f73a5450ae] requested
 ```
+
+If you want to see what changes the script is going to push to AWS WAF **before** actually making any changes, use the ```--dryrun``` switch.

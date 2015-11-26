@@ -39,16 +39,6 @@ def parse_args(str_to_parse=None):
 	else:
 		return parser.parse_args()
 
-def build_args_object():
-	"""
-	Build an object to hold the same parameters as a set of parsed
-	command line args.
-
-	Use this if you're calling this project as a module.
-	"""
-	args = parse_args("")
-	return args
-
 class ScriptContext():
 	"""
 	Context for IP List to IP Set script
