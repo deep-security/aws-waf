@@ -20,8 +20,9 @@ Basic command line usage is available by using the ```--help``` switch.
 
 ```bash
 $ python ip_list_to_set.py --help
->> usage: ip_list_to_set.py [-h] [-d IP_LIST] [-l] [-m DSM] -u USERNAME -p
-                         PASSWORD [-t TENANT] [--dryrun] [--verbose]
+>> usage: ip_list_to_set.py [-h] [-d IP_LIST] [-l] [-m DSM] [--dsm-port DSM_PORT]
+                         -u USERNAME -p PASSWORD [-t TENANT] [--dryrun]
+                         [--verbose]
 
 Deep Security uses the concept of IP Lists to make firewall rules easier to
 administer. The AWS WAF uses a similar concept of IP Sets as rule conditions.
@@ -35,6 +36,8 @@ optional arguments:
   -l, --list            List the available Deep Security IP Lists and the AWS
                         WAF IP Sets
   -m DSM, --dsm DSM     The address of the Deep Security Manager. Defaults to
+                        Deep Security as a Service
+  --dsm-port DSM_PORT   The address of the Deep Security Manager. Defaults to
                         Deep Security as a Service
   -u USERNAME, --username USERNAME
                         The Deep Security username to access the IP Lists

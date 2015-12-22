@@ -28,6 +28,7 @@ def parse_args(str_to_parse=None):
 	#parser.add_argument('-a', '--aws', action='store', dest="ip_set", required=False, help='Specify a target AWS WAF IP Set')
 	parser.add_argument('-l', '--list', action='store_true', required=False, help='List the available Deep Security IP Lists and the AWS WAF IP Sets')
 	parser.add_argument('-m', '--dsm', action='store', default='app.deepsecurity.trendmicro.com', required=False, help='The address of the Deep Security Manager. Defaults to Deep Security as a Service')
+	parser.add_argument('--dsm-port', action='store', default='443', dest='dsm_port', required=False, help='The address of the Deep Security Manager. Defaults to Deep Security as a Service')
 	parser.add_argument('-u', '--username', action='store', required=True, help='The Deep Security username to access the IP Lists with. Should only have read-only rights to IP lists and API access')
 	parser.add_argument('-p', '--password', action='store', required=True, help='The password for the specified Deep Security username. Should only have read-only rights to IP lists and API access')
 	parser.add_argument('-t', '--tenant', action='store', required=False, default=None, help='The name of the Deep Security tenant/account')
@@ -70,7 +71,10 @@ class ScriptContext():
 		"""
 		Gracefully dispose of the script's context
 		"""
-		self.dsm.finish_session()
+		if self.dsm:
+			try:
+				self.dsm.finish_session()
+			except Exception, err: pass
 
 	def _get_aws_credentials(self):
 		"""
@@ -95,7 +99,7 @@ class ScriptContext():
 	def _connect_to_deep_security(self):
 		dsm = None
 		try:
-			dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, username=self.args.username, password=self.args.password, tenant=self.args.tenant) 
+			dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, dsm_port=self.args.dsm_port, username=self.args.username, password=self.args.password, tenant=self.args.tenant) 
 			self._log("Connected to the Deep Security Manager at {}".format(self.args.dsm))
 		except Exception, err: pass # @TODO handle this exception gracefully
 
