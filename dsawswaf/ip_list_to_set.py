@@ -25,7 +25,6 @@ def parse_args(str_to_parse=None):
 	parser = argparse.ArgumentParser(description=description)
 
 	parser.add_argument('-d', '--ds', action='store', dest="ip_list", required=False, help='Specify an IP List within Deep Security as the source for the AWS WAF IP Set')
-	#parser.add_argument('-a', '--aws', action='store', dest="ip_set", required=False, help='Specify a target AWS WAF IP Set')
 	parser.add_argument('-l', '--list', action='store_true', required=False, help='List the available Deep Security IP Lists and the AWS WAF IP Sets')
 	parser.add_argument('-m', '--dsm', action='store', default='app.deepsecurity.trendmicro.com', required=False, help='The address of the Deep Security Manager. Defaults to Deep Security as a Service')
 	parser.add_argument('--dsm-port', action='store', default='443', dest='dsm_port', required=False, help='The address of the Deep Security Manager. Defaults to Deep Security as a Service')
