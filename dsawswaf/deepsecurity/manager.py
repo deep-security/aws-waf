@@ -18,6 +18,7 @@ import computer
 import computer_group
 import ip_list
 import policy
+import soap_https_handler
 
 class Manager(object):
 	"""
@@ -25,7 +26,7 @@ class Manager(object):
 	functionality. Well, at least the functionality available via the 
 	SOAP and REST APIs
 	"""
-	def __init__(self, username=None, password=None, tenant=None, dsm_hostname=None, start_session=True):
+	def __init__(self, username=None, password=None, tenant='Primary', dsm_hostname=None, dsm_port=443, start_session=True, ignore_ssl_validation=False, debug=False):
 		"""
 		Create a new reference to a Deep Security Manager
 
@@ -34,16 +35,18 @@ class Manager(object):
 		tenant = 		In a multi-tenant deployment (like Deep Security as a Service) this is the tenant/account name. 
 								For non-multi tenant accounts this can be left blank or set to "primary"
 		dsm_hostname = The hostname of the Deep Security Manager to access, defaults to Deep Security as a Service
+		dsm_port = The port of the Deep Security Manager to access, defaults to Deep Security as a Service
 		start_session = Whether or not to automatically start a session with the specified Deep Security Manager
 		"""
 		self.version = '9.6'
 		self._hostname = 'app.deepsecurity.trendmicro.com' if not dsm_hostname else dsm_hostname # default to Deep Security as a Service
-		self._port = 443 # on-premise defaults to 4119
+		self._port = dsm_port # on-premise defaults to 4119
 		self.rest_api_path = 'rest'
 		self.soap_api_wsdl = 'webservice/Manager?WSDL'
 		self.session_id_rest = None
 		self.session_id_soap = None
 		self.soap_client = None
+		self.ignore_ssl_validation = ignore_ssl_validation
 
 		# Deep Security data
 		self.computer_groups = {}
@@ -54,12 +57,13 @@ class Manager(object):
 		self.ip_lists = {}
 
 		# Setup functions
-		self.debug = False
+		self._debug = debug
 		self.logger = self._setup_logging()
 		self._set_url()
 
 		# Try to start a session if possible
 		if username and password and start_session:
+			self.log("Attempting to start a session")
 			self.start_session(username=username, password=password, tenant=tenant)
 
 	def __del__(self):
@@ -105,6 +109,17 @@ class Manager(object):
 		self._port = val
 		self._set_url()
 
+	# Any change to debug requires that logging be reset
+	@property
+	def debug(self): return self._debug
+	
+	@debug.setter
+	def debug(self, val):
+		"""
+		Reset the logging configuration on change
+		"""
+		self._setup_logging()
+
 	# *****************************************************************
 	# 'Private' methods
 	# *****************************************************************
@@ -115,16 +130,18 @@ class Manager(object):
 
 		# Based on tips from http://www.blog.pythonlibrary.org/2012/08/02/python-101-an-intro-to-logging/
 		logging.basicConfig(level=logging.ERROR)
+		if self._debug:
+			logging.basicConfig(level=logging.DEBUG)
 
 		# turn down suds logging
 		logging.getLogger('suds.client').setLevel(logging.ERROR)
-		if self.debug:
+		if self._debug:
 			logging.getLogger('suds.client').setLevel(logging.DEBUG)
 
 		# setup module logging
 		logger = logging.getLogger("DeepSecurity.API")
 		logger.setLevel(logging.WARNING)
-		if self.debug:
+		if self._debug:
 			logger.setLevel(logging.DEBUG)
 
 		formatter = logging.Formatter('[%(asctime)s]\t%(message)s', '%Y-%m-%d %H:%M:%S')
@@ -159,25 +176,12 @@ class Manager(object):
 		"""
 		soap_client = None
 
-		# First, try to use a local WSDL
-		wsdl_path = None
-		current_path = os.path.realpath(os.path.dirname(inspect.getfile(inspect.currentframe())))
-		found_wsdl = []
-		for fn in os.listdir(current_path):
-			if fn.endswith('.wsdl.xml'): found_wsdl.append(os.path.join(current_path, fn))
-
-		found_wsdl.sort()
-
-		if len(found_wsdl) > 0:
-			if 'deepsecurity.latest.wsdl.xml' in found_wsdl:
-				wsdl_path = 'file://deepsecurity.latest.wsdl.xml'
-			else:
-				wsdl_path = 'file://{}'.format(found_wsdl[0])
-
-		if not wsdl_path or force_load_from_url: wsdl_path = self.base_url_for_soap
-
 		try:
-			soap_client = suds.client.Client(wsdl_path)
+			if self.ignore_ssl_validation:
+				self.log("Ignoring SSL validation for SOAP API access")
+				soap_client = suds.client.Client(self.base_url_for_soap, transport=soap_https_handler.HTTPSIgnoreValidation())
+			else:
+				soap_client = suds.client.Client(self.base_url_for_soap)
 		except Exception, soap_err:
 			self.log("Could not create a SOAP client. Threw exception: %s" % soap_err)
 			soap_client = None
@@ -233,13 +237,13 @@ class Manager(object):
 		if call.has_key('query') and call['query'] and not call.has_key('data'):
 			# GET
 			try:
-				result = requests.get(full_url, headers=headers)
+				result = requests.get(full_url, headers=headers, verify=not self.ignore_ssl_validation)
 			except Exception, get_err:
 				self.log("Failed to get REST call [%s] with query string. Threw exception: /%s" % (call['method'].lstrip('/'), post_err))					
 		elif call.has_key('data') and call['data']:
 			# POST
 			try:
-				result = requests.post(full_url, data=json.dumps(call['data']), headers=headers)
+				result = requests.post(full_url, data=json.dumps(call['data']), headers=headers, verify=not self.ignore_ssl_validation)
 			except Exception, post_err:
 				self.log("Failed to post REST call [%s]. Threw exception: /%s" % (call['method'].lstrip('/'), post_err))	
 		else:
@@ -362,7 +366,7 @@ class Manager(object):
 		# We need to make different calls for tenants and the primary
 		soap_call = None
 		rest_call = None
-		if not tenant:
+		if not tenant or tenant.lower() == "primary":
 			soap_call = self._get_call_structure()
 			soap_call['auth'] = False
 			soap_call['method'] = 'authenticate'
@@ -414,7 +418,10 @@ class Manager(object):
 
 		# Do we have an existing REST session?
 		if not self.session_id_rest or force_new_session:
-			if rest_call: self.session_id_rest = (self._make_call(rest_call)).text
+			if rest_call: 
+				response = self._make_call(rest_call)
+				if response:
+					self.session_id_rest = response.text
 
 			if self.session_id_rest:
 				self.log("Authenticated successfully, starting REST session [%s]" % self.session_id_rest)
@@ -724,9 +731,8 @@ class Manager(object):
 			'auth': True,
 		}
 		result = self._make_call(call)
-		if result:
-			for obj in result:
-				self.ip_lists[obj['ID']] = ip_list.IpList(ip_list_details=obj, manager=self)
+		for obj in result:
+			self.ip_lists[obj['ID']] = ip_list.IpList(ip_list_details=obj, manager=self)
 
 	def request_events_from_computer(self, host_id):
 		"""
