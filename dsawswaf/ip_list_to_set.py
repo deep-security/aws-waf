@@ -260,7 +260,7 @@ class ScriptContext():
 		# IP or Range #Comment	Example: 255.255.255.255 #Broadcast IP
 		addresses = []
 		for address in ds_list.addresses:
-			if "#" in address: address = split('#').strip() # remove any comments
+			if "#" in address: address = address.split('#').strip() # remove any comments
 			if '-' in address:
 				try:
 					a1, a2 = address.split('-')
