@@ -62,8 +62,10 @@ class ScriptContext():
     """
     Print the command line syntax available to the user
     """
+    self.update_user("usage: ds-to-aws-waf [COMMAND]\n   For more help on a specific command, type ds-to-aws-waf [COMMAND] --help\n\n   Available commands:\n")
     for cmd, data in self.available_commands.items():
-      self.update_user("{}\t{}".format(cmd, data['help']))
+      self.update_user("   {}\n      > {}".format(cmd, data['help']))
+    self.update_user("")
 
 def main():
   """
