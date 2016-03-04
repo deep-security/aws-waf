@@ -11,6 +11,9 @@ import boto3
 import boto3.session
 import netaddr
 
+# project libraries
+import lib.iplists
+
 def parse_args(str_to_parse=None):
   """
   Parse the command line args
