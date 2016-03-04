@@ -12,6 +12,7 @@ import boto3.session
 import netaddr
 
 # project libraries
+import lib.core
 import lib.iplists
 
 def parse_args(str_to_parse=None):
@@ -24,20 +25,14 @@ def parse_args(str_to_parse=None):
 
   return cmd
 
-class ScriptContext():
-  """
-  Context for IP List to IP Set script.
-
-  Using an object makes is easy to avoid any globals and clarifies 
-  the intention of the script
-  """
+class Script(lib.core.ScriptContext):
   def __init__(self, command_to_run):
     self.command_to_run = command_to_run
     self.available_commands = {
         'iplist': 
           { 
             'help': 'Push a Deep Security IP list to an AWS WAF IP Set',
-            'cmd': self.update_user,
+            'cmd': lib.iplists.run_script,
           },
         'sqli': 
           {
@@ -52,12 +47,6 @@ class ScriptContext():
       # run a specific command
       self.available_commands[self.command_to_run]['cmd'](sys.argv[1:])
 
-  def update_user(self, msg):
-    """
-    Update user via stdout
-    """
-    print(msg)
-
   def print_help(self):
     """
     Print the command line syntax available to the user
@@ -71,7 +60,6 @@ def main():
   """
   Run the script from the command line
   """
-  context = ScriptContext(parse_args())
-
+  context = Script(parse_args())
 
 if __name__ == '__main__': main()
