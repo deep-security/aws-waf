@@ -57,6 +57,17 @@ Each script in this set works under a common structure. There are several shared
                         debugging
 ```
 
+These core settings allow you to connect to a Deep Security manager or Deep Security as a Service. 
+
+```bash
+# to connect to your own Deep Security manager
+ds-to-aws-waf [COMMAND] -d 10.1.1.0 -u admin -p USE_RBAC_TO_REDUCE_RISK --ignore-ssl-validation
+
+# to connect to Deep Security as a Service
+ds-to-aws-waf [COMMAND] -u admin -p USE_RBAC_TO_REDUCE_RISK -t MY_ACCOUNT
+```
+
+Each individual command will also have it's own options that allow you to control the behaviour of the command.
 
 ## SSL Certificate Validation
 
