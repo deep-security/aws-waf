@@ -8,7 +8,7 @@ A simple tool set to help build AWS WAF rule sets from Deep Security.
 pip install -r requirements.txt
 ```
 
-### Usage
+### Basic Usage
 
 The syntax for basic command line usage is available by using the ```--help``` switch.
 
@@ -104,55 +104,20 @@ These are expected warnings. Can you tell that we (and the python core teams) ar
 
 ## AWS WAF Costs
 
-https://aws.amazon.com/waf/pricing/
+The commands available in this repository are designed to help you build better rule sets for AWS WAF based on what Deep Security understands about your workloads.
 
-AWS WAF charges based on the number of web access control lists (web ACLs) that you create, the number of rules that you add per web ACL, and the number of web requests that you receive. There are no upfront commitments. AWS WAF charges are in addition to Amazon CloudFront Pricing.
-Web Access Control List and Rule Charges
+There are charges associated with pushing new rules to AWS WAF. **Always check the [AWS WAF pricing page](https://aws.amazon.com/waf/pricing/) for the latest prices.**
 
-AWS WAF charges based on the number of web ACLs that you create and the number of rules that you add per web ACL. Web ACLs and their added rules are metered regardless of whether they are associated with a CloudFront distribution. There is no additional charge for reusing web ACLs across mulitple CloudFront distributions; however, you are charged for each rule added to each web ACL.
-Web Access Control List Charges
+AWS WAF charges for each web access control list (WACL), for each rule, and for the number of requests processed. This is in addition to any associated AWS CloudFront charges.
 
-$5 per web ACL per month
+We've done our best to ensure that each command optimizes the changes it makes in AWS WAF in order to reduce your costs. In general, you can run a command with the ```--dryrun``` option to see the results without making changes and before incurring any costs.
 
-Rule Charges
+### iplists
 
-$1 per rule per web ACL per month
+The *iplists* command does not create a WACL or rule on your behalf. It creates new IPSet objects that can be used in an AWS WAF rule as a match condition. There are no charges for these IPSets.
 
-Request Charges
+### sqli
 
-AWS WAF also charges for the amount of web request AWS WAF handles. This is based upon the number of web requests the application receives.
+The *sqli* command designs a set of rules to help complete your AWS WAF deployment. There are charges associated with each rule that the script creates.
 
-Request Charge
-
-$0.60 per million web requests
-Manage Your AWS Resources
-
-Sign in to the Console
-Pricing Example
-Let’s assume you start using AWS WAF at the first of the month to protect eight CloudFront web distributions. For this example, we’ll create two web ACLs, one web ACL with four rules associated to six CloudFront web distributions, and another web ACL with six rules associated to two remaining CloudFront web distributions. The CloudFront web distributions are expected to receive 10 million requests per month in total.
-
-Web ACL
-
-Web ACL charge = # of web ACLs per month * $5
-
-Total web ACL charge = 2 * $5 = $10
-
-Rule
-
-The price for a rule is $1 per month (pro-rated by the hour)
-
-Rule charge = # of rules associated per month * $1
-
-Total rule charge = (4 + 6) * $1 = $10
-
-Request
-
-The price for request is $0.60 per million
-
-Request charge = # of requests per month (in millions) * $0.60
-
-Total request charge = 10 million requests * $0.60 = $6.00
-
-Total Monthly Bill
-
-Total web ACL charge + total rule charge + total request charge = $10 + $10 + $6 = $26
+The script can be run in ```--dryrun``` to see the end result before pushing the rules to AWS. This can help you get a better idea of the cost associated with the new rule set.
