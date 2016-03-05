@@ -39,6 +39,7 @@ class ScriptContext():
     self.parser = parser
     self._passed_args = args
     self.args = parser.parse_args(self._passed_args)
+    self.dsm = None
 
   def __del__(self): self.clean_up() # clean up on object destruction
 
@@ -46,7 +47,7 @@ class ScriptContext():
     """
     Gracefully dispose of the script's context
     """
-    if self.dsm:
+    if 'dsm' in dir(self) and self.dsm:
       try:
         self.dsm.finish_session()
       except Exception, err: pass

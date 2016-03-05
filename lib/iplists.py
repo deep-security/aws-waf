@@ -25,10 +25,12 @@ def run_script(args):
 
   if script.args.list:
     # List the available Deep Security IP Lists and AWS WAF IP Sets
+    script.connect()
     script.get_available_aws_sets()
     script.print_lists()
 
   elif script.args.ip_list:
+    script.connect()
     if script.args.dryrun:
       script._log("***********************************************************************", priority=True)
       script._log("* DRY RUN ENABLED. NO CHANGES WILL BE MADE", priority=True)
@@ -43,7 +45,8 @@ def run_script(args):
 
 class Script(core.ScriptContext):
   def __init__(self, args, parser):
-    super(Script, self).__init__(args, parser)
+    core.ScriptContext.__init__(self, args, parser)
+    #super(Script, self).__init__(args, parser)
     self.aws_credentials = None
     self.dsm = None
     self.ip_lists = []
@@ -51,6 +54,14 @@ class Script(core.ScriptContext):
     self.ip_sets = []
 
     self.aws_credentials = self._get_aws_credentials()
+    self.dsm = None #self._connect_to_deep_security()
+    self.waf = None #self._connect_to_aws_waf()
+    self.ip_lists = None #self._get_available_ds_lists()
+
+  def connect(self):
+    """
+    Connect to Deep Security and AWS WAF
+    """
     self.dsm = self._connect_to_deep_security()
     self.waf = self._connect_to_aws_waf()
     self.ip_lists = self._get_available_ds_lists()
