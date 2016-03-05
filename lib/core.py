@@ -111,7 +111,8 @@ class ScriptContext():
 * These are to be expected when operating without validation. 
 ***********************************************************************""", priority=True)
     try:
-      dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, dsm_port=self.args.dsm_port, username=self.args.username, password=self.args.password, tenant=self.args.tenant, ignore_ssl_validation=self.args.ignore_ssl_validation) 
+      dsm_port = self.args.dsm_port if not self.args.dsm === 'app.deepsecurity.trendmicro.com' else 443
+      dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, dsm_port=dsm_port, username=self.args.username, password=self.args.password, tenant=self.args.tenant, ignore_ssl_validation=self.args.ignore_ssl_validation) 
       self._log("Connected to the Deep Security Manager at {}".format(self.args.dsm))
     except Exception, err: pass # @TODO handle this exception gracefully
 

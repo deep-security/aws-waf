@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 ### Usage
 
-Basic command line usage is available by using the ```--help``` switch.
+The syntax for basic command line usage is available by using the ```--help``` switch.
 
 ```bash
 $ python ds-to-aws-waf.py
@@ -24,6 +24,37 @@ usage: ds-to-aws-waf [COMMAND]
    sqli
       > Determine which instances protected by Deep Security should also be protected by AWS WAF SQLi rules
    ...
+```
+
+Each script in this set works under a common structure. There are several shared arguments;
+
+```bash
+  -h, --help            show this help message and exit
+  -d DSM, --dsm DSM     The address of the Deep Security Manager. Defaults to
+                        Deep Security as a Service
+  --dsm-port DSM_PORT   The address of the Deep Security Manager. Defaults to
+                        an AWS Marketplace/software install (:4119).
+                        Automatically configured for Deep Security as a
+                        Service
+  -u DSM_USERNAME, --dsm-username DSM_USERNAME
+                        The Deep Security username to access the IP Lists
+                        with. Should only have read-only rights to IP lists
+                        and API access
+  -p DSM_PASSWORD, --dsm-password DSM_PASSWORD
+                        The password for the specified Deep Security username.
+                        Should only have read-only rights to IP lists and API
+                        access
+  -t DSM_TENANT, --dsm-tenant DSM_TENANT
+                        The name of the Deep Security tenant/account
+  --ignore-ssl-validation
+                        Ignore SSL certification validation. Be careful when
+                        you use this as it disables a recommended security
+                        check. Required for Deep Security Managers using a
+                        self-signed SSL certificate
+  --dryrun              Do a dry run of the command. This will not make any
+                        changes to your AWS WAF service
+  --verbose             Enabled verbose output for the script. Useful for
+                        debugging
 ```
 
 
