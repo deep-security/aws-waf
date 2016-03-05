@@ -40,14 +40,33 @@ class ScriptContext():
     self._passed_args = args
     self.args = parser.parse_args(self._passed_args)
 
-  def update_user(self, msg, err=None):
+  def __del__(self): self.clean_up() # clean up on object destruction
+
+  def clean_up(self):
     """
-    Update user via stdout
+    Gracefully dispose of the script's context
     """
-    if err:
-      print("{}. Threw an exception:\n{}".format(msg, err))
-    else:
-      print(msg)
+    if self.dsm:
+      try:
+        self.dsm.finish_session()
+      except Exception, err: pass
+
+  def update_user(self, message):
+    """
+    Update the update
+    """
+    print(message)
+
+  def _log(self, msg, err=None, priority=False):
+    """
+    Create a log entry for the specified event
+    """
+    # @TODO add actual logging :-)
+    if priority or self.args.verbose or err:
+      if err:
+        print("{}. Threw an exception:\n{}".format(msg, err))
+      else:
+        print(msg)
 
   def print_help(self):
     """

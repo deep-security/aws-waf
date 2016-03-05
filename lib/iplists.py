@@ -23,6 +23,24 @@ def run_script(args):
   
   script = Script(args, parser)
 
+  if script.args.list:
+    # List the available Deep Security IP Lists and AWS WAF IP Sets
+    script.get_available_aws_sets()
+    script.print_lists()
+
+  elif script.args.ip_list:
+    if script.args.dryrun:
+      script._log("***********************************************************************", priority=True)
+      script._log("* DRY RUN ENABLED. NO CHANGES WILL BE MADE", priority=True)
+      script._log("***********************************************************************", priority=True)
+    # get the specified Deep Security IP Lists (already cached)
+    ip_list = script.get_ds_list(script.args.ip_list)
+    # create the IP Set
+    if ip_list:
+      script.create_ip_set(ip_list)
+
+  script.clean_up()
+
 class Script(core.ScriptContext):
   def __init__(self, args, parser):
     super(Script, self).__init__(args, parser)
