@@ -217,6 +217,7 @@ class Script(core.ScriptContext):
     """
     Create an AWS WAF IP Set based on the specified Deep Security IP List
     """
+    self._log("Attempt to create a matching IP Set for Deep Security list #{}".format(ds_list))
     if self.waf:
       # is there an existing IP Set?
       current_ip_set = None
@@ -226,9 +227,9 @@ class Script(core.ScriptContext):
           current_ip_set = ip_set['IPSetId']
           break
 
-      response = self.waf.get_change_token()
+      #response = self.waf.get_change_token()
       change_token = self._get_aws_waf_change_token()
-
+      
       if change_token:
         list_created = False
         if not current_ip_set:

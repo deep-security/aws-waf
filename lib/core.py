@@ -3,6 +3,10 @@ import argparse
 import os
 import urllib2
 
+# 3rd party libraries
+import boto3
+import boto3.session
+
 # project libraries
 import deepsecurity
 
@@ -135,11 +139,12 @@ class ScriptContext():
       waf = aws.client('waf') 
       self._log("Connected to AWS WAF")
     except Exception, err: 
-      # @TODO handle this exception gracefully
+      self._log("Could not connect to AWS WAF using local CLI credentials", err=err)
       try:
         waf = boto3.client('waf')
         self._log("Connected to AWS WAF")
-      except Exception, err: pass # @TODO handle this exception gracefully  
+      except Exception, err:
+        self._log("Could not connect to AWS WAF using an instance role", err=err)  
 
     return waf
 
@@ -159,6 +164,9 @@ class ScriptContext():
     return ip_sets
 
   def _get_aws_waf_change_token(self):
+    """
+    Get a new AWS WAF change token (required for any changes)
+    """
     response = self.waf.get_change_token()
     change_token = None
     if response and response.has_key('ChangeToken'):
