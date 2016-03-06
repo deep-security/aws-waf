@@ -13,7 +13,7 @@ import core
 import deepsecurity.manager
 
 def run_script(args):
-  print("Running iplists with args: {}".format(" ".join(args)))
+  print("Running iplists with args: {}".format(" ".join(args[1:])))
   
   # configure the command line args
   parser = core.get_arg_parser(prog='ds-to-aws-waf.py iplists')
@@ -21,7 +21,7 @@ def run_script(args):
   # change to i from -d/--ds?
   parser.add_argument('-i', '--id', action='store', dest="ip_list", required=False, help='Specify an IP List by ID within Deep Security as the source for the AWS WAF IP Set')
   
-  script = Script(args, parser)
+  script = Script(args[1:], parser)
 
   if script.args.list:
     # List the available Deep Security IP Lists and AWS WAF IP Sets

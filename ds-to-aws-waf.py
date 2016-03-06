@@ -14,6 +14,7 @@ import netaddr
 # project libraries
 import lib.core
 import lib.iplists
+import lib.sqli
 
 def parse_args(str_to_parse=None):
   """
@@ -37,7 +38,7 @@ class Script(lib.core.ScriptContext):
         'sqli': 
           {
             'help': 'Determine which instances protected by Deep Security should also be protected by AWS WAF SQLi rules',
-            'cmd': self.update_user,
+            'cmd': lib.sqli.run_script,
           },
       }
 

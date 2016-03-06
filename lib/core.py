@@ -1,7 +1,10 @@
-# Standard libraries
+# standard libraries
 import argparse
 import os
 import urllib2
+
+# project libraries
+import deepsecurity
 
 def get_arg_parser(prog='ds-to-aws-waf.py', description=None):
   """
@@ -17,9 +20,9 @@ def get_arg_parser(prog='ds-to-aws-waf.py', description=None):
   # Deep Security arguments
   parser.add_argument('-d', '--dsm', action='store', default='app.deepsecurity.trendmicro.com', required=False, help='The address of the Deep Security Manager. Defaults to Deep Security as a Service')
   parser.add_argument('--dsm-port', action='store', default='4119', dest='dsm_port', required=False, help='The address of the Deep Security Manager. Defaults to an AWS Marketplace/software install (:4119). Automatically configured for Deep Security as a Service')
-  parser.add_argument('-u', '--dsm-username', action='store', required=True, help='The Deep Security username to access the IP Lists with. Should only have read-only rights to IP lists and API access')
-  parser.add_argument('-p', '--dsm-password', action='store', required=True, help='The password for the specified Deep Security username. Should only have read-only rights to IP lists and API access')
-  parser.add_argument('-t', '--dsm-tenant', action='store', required=False, default=None, help='The name of the Deep Security tenant/account')
+  parser.add_argument('-u', '--dsm-username', action='store', dest='dsm_username', required=True, help='The Deep Security username to access the IP Lists with. Should only have read-only rights to IP lists and API access')
+  parser.add_argument('-p', '--dsm-password', action='store', dest='dsm_password', required=True, help='The password for the specified Deep Security username. Should only have read-only rights to IP lists and API access')
+  parser.add_argument('-t', '--dsm-tenant', action='store', dest='dsm_tenant', required=False, default=None, help='The name of the Deep Security tenant/account')
 
   # general structure arguments
   parser.add_argument('--ignore-ssl-validation', action='store_true', dest='ignore_ssl_validation', required=False, help='Ignore SSL certification validation. Be careful when you use this as it disables a recommended security check. Required for Deep Security Managers using a self-signed SSL certificate')
@@ -111,10 +114,12 @@ class ScriptContext():
 * These are to be expected when operating without validation. 
 ***********************************************************************""", priority=True)
     try:
-      dsm_port = self.args.dsm_port if not self.args.dsm === 'app.deepsecurity.trendmicro.com' else 443
-      dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, dsm_port=dsm_port, username=self.args.username, password=self.args.password, tenant=self.args.tenant, ignore_ssl_validation=self.args.ignore_ssl_validation) 
+      dsm_port = self.args.dsm_port if not self.args.dsm == 'app.deepsecurity.trendmicro.com' else 443
+      self._log("Attempting to connect to Deep Security at {}:{}".format(self.args.dsm, dsm_port))
+      dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, dsm_port=dsm_port, username=self.args.dsm_username, password=self.args.dsm_password, tenant=self.args.dsm_tenant, ignore_ssl_validation=self.args.ignore_ssl_validation) 
       self._log("Connected to the Deep Security Manager at {}".format(self.args.dsm))
-    except Exception, err: pass # @TODO handle this exception gracefully
+    except Exception, err: 
+      self._log("Could not connect to the Deep Security", err=err)
 
     if not dsm.session_id_rest and not dsm.session_id_soap:
       self._log("Unable to connect to the Deep Security Manager. Please check your settings")
