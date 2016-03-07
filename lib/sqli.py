@@ -20,6 +20,8 @@ def run_script(args):
   
   script = Script(args[1:], parser)
   
+  script.cache_patterns()
+
   if script.args.list:
     # List the available EC2 instances and cross reference with Deep Security
     print "1"
@@ -60,6 +62,8 @@ class Script(core.ScriptContext):
     self.waf = None
     self.ec2 = None
     self.instances = {}
+    self.tbuids = []
+    self.patterns = []
 
     self.aws_credentials = self._get_aws_credentials()
     self.dsm = None #self._connect_to_deep_security()
@@ -73,6 +77,21 @@ class Script(core.ScriptContext):
     self.dsm = self._connect_to_deep_security()
     self.waf = self._connect_to_aws_waf()
     self.ec2 = self._connect_to_aws_ec2()
+
+  def cache_patterns(self):
+    """
+    Cache the patterns for matching Deep Security rules for SQLi
+    recommendations
+    """
+    TBUIDS = 'sql.tbuids'
+    PATTERNS = 'sql.patterns'
+    if os.path.exists(TBUIDS):
+      with open(TBUIDS, 'r') as fh:
+        for line in fh: self.tbuids.append(line.strip())
+
+    if os.path.exists(PATTERNS):
+      with open(PATTERNS, 'r') as fh:
+        for line in fh: self.patterns.append(line.strip())
 
   def get_ec2_instances(self):
     """
@@ -145,6 +164,15 @@ class Script(core.ScriptContext):
         ]:
         for rule_id in getattr(self.dsm.policies[computer.policy_id], rule_type)[-1]:
           rule = self.dsm.rules[rule_type.replace('_rules', '')][rule_id]
+          if 'tbuid' in dir(rule):
+            print "{}:{}".format(rule_type, rule.tbuid)
+            if rule.tbuid in self.tbuids:
+              print "*** SQLi requirement found"
+
+          if 'application_type_id' in dir(rule):
+            if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
+              print "*** SQLi requirement found"
+          
           print "{}:{}".format(rule_type, rule.name.encode('ascii', 'ignore'))
     else:
       self._log("Computer is NOT protected by Deep Security")

@@ -141,14 +141,16 @@ class ScriptContext():
       self._log("""***********************************************************************
 * IGNORING SSL CERTIFICATE VALIDATION
 * ===================================
-* You have requested to ignore SSL certificate validation. This is a less secure method 
-* of connecting to a Deep Security Manager (DSM). Please ensure that you have other 
-* mitigations and security controls in place (like restricting IP space that can access 
-* the DSM, implementing least privilege for the Deep Security user/role accessing the 
-* API, etc).
+* You have requested to ignore SSL certificate validation. This is a 
+* less secure method of connecting to a Deep Security Manager (DSM). 
+* Please ensure that you have other mitigations and security controls 
+* in place (like restricting IP space that can access the DSM, 
+* implementing least privilege for the Deep Security user/role 
+* accessing the API, etc).
 *
-* During script execution, you'll see a number of "InsecureRequestWarning" messages. 
-* These are to be expected when operating without validation. 
+* During script execution, you'll see a number of 
+* "InsecureRequestWarning" messages. These are to be expected when 
+* operating without validation. 
 ***********************************************************************""", priority=True)
     try:
       dsm_port = self.args.dsm_port if not self.args.dsm == 'app.deepsecurity.trendmicro.com' else 443
