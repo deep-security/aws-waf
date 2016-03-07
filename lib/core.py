@@ -29,7 +29,7 @@ def get_arg_parser(prog='ds-to-aws-waf.py', description=None):
   parser.add_argument('-t', '--dsm-tenant', action='store', dest='dsm_tenant', required=False, default=None, help='The name of the Deep Security tenant/account')
 
   # AWS arguments
-  parser.add_argument('-r', '--aws-region', action='store', dest='aws_region', required=False, default=None, help='The name of AWS region to connect to')
+  parser.add_argument('-r', '--aws-region', action='store', dest='aws_region', required=False, default='us-east-1', help='The name of AWS region to connect to')
 
   # general structure arguments
   parser.add_argument('--ignore-ssl-validation', action='store_true', dest='ignore_ssl_validation', required=False, help='Ignore SSL certification validation. Be careful when you use this as it disables a recommended security check. Required for Deep Security Managers using a self-signed SSL certificate')

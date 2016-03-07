@@ -628,7 +628,6 @@ class Manager(object):
 		if results:
 			if not self.computers: self.computers = {}
 			for result in results:
-				return result
 				self.computers[result['ID']] = computer.Computer(result, manager=self)
 
 	def get_computer_details(self, computer_hostname=None):

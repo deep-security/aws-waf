@@ -17,13 +17,31 @@ class Computer(object):
 			'name': 'hostname',
 			'description': 'description',
 			'displayName': 'display_name',
+			'external': 'external',
+      'externalID': 'external_id',
+      'hostGroupID': 'host_group_id',
+      'hostType': 'host_type',
 			'platform': 'platform',
 			'securityProfileID': 'policy_id',
-			'cloudObjectImageId': 'cloud_image_id',
-			'cloudObjectInstanceId': 'cloud_instance_id',
+			'antiMalwareClassicPatternVersion': 'anti_malware_classic_pattern_version',
+      'antiMalwareEngineVersion': 'anti_malware_engine_version',
+      'antiMalwareIntelliTrapExceptionVersion': 'anti_malware_intelli_trap_exception_version',
+      'antiMalwareIntelliTrapVersion': 'anti_malware_intelli_trap_version',
+      'antiMalwareSmartScanPatternVersion': 'anti_malware_smart_scan_pattern_version',
+      'antiMalwareSpywarePatternVersion': 'anti_malware_spyware_pattern_version',
+			'cloudObjectImageId': 'cloud_object_image_id', # @TODO handle property name change
+			'cloudObjectInstanceId': 'cloud_object_instance_id', # @TODO handle property name change
+			'cloudObjectInternalUniqueId': 'cloud_object_internal_unique_id',
 			'cloudObjectSecurityGroupIds': 'cloud_security_policy',
 			'cloudObjectType': 'cloud_type',
+			'componentKlasses': 'component_klasses',
+      'componentNames': 'component_names',
+      'componentTypes': 'component_types',
+      'componentVersions': 'component_versions',
+      'hostGroupName': 'host_group_name',
+      'hostInterfaces': 'host_interfaces',
 			'hostLight': 'status_light',
+
 			'securityProfileName': 'policy_name',
 			'lastIPUsed': 'last_ip',
 			'overallAntiMalwareStatus': 'module_status_anti_malware',
@@ -33,16 +51,41 @@ class Computer(object):
 			'overallLogInspectionStatus': 'module_status_log_inspection',
 			'overallWebReputationStatus': 'module_status_web_reputation',
 			'overallStatus': 'overall_status',
+      'lastAnitMalwareScheduledScan': 'last_anti_malware_scheduled_scan',
+      'lastAntiMalwareEvent': 'last_anti_malware_event',
+      'lastAntiMalwareManualScan': 'last_anti_malware_manual_scan',
+      'lastDpiEvent': 'last_dpi_event',
+      'lastFirewallEvent': 'last_firewall_event',
+      'lastIPUsed': 'last_ip_used',
+      'lastIntegrityMonitoringEvent': 'last_integrity_monitoring_event',
+      'lastLogInspectionEvent': 'last_log_inspection_event',
+      'lastWebReputationEvent': 'last_web_reputation_event',
+      'light': 'light',
+      'locked': 'locked',
+      'overallLastRecommendationScan': 'overall_last_recommendation_scan',
+      'overallLastSuccessfulCommunication': 'overall_last_successful_communication',
+      'overallLastSuccessfulUpdate': 'overall_last_successful_update',
+      'overallLastUpdateRequired': 'overall_last_update_required',
+      'overallVersion': 'overall_version',
+      'securityProfileName': 'security_profile_name',
+      'virtualName': 'virtual_name',
+      'virtualUuid': 'virtual_uuid',
 			}.items():
 			try:
-				setattr(self, prop, host_details[key])
+				if key in dir(host_details):
+					setattr(self, prop, host_details[key])
+				else:
+					self.manager.log("Property {} is not present in API response".format(key))
 			except Exception, err:
-				if self.manager: self.manager.log.warning("Could not add property [%s] to computer [%s]. Threw exception: %s" % (prop, host_details['name'], err))
+				if self.manager: self.manager.log("Could not add property [%s] to computer [%s]. Threw exception: %s".format(prop, host_details['name'], err), err=err, level='warning')
 
 		try:
-			self.number_of_interfaces = len(host_details['hostInterfaces'])
+			if 'has_key' in host_details and host_details.has_key('hostInterfaces') and host_details['hostInterfaces'] and type(host_details['hostInterfaces']) == type([]):
+				self.number_of_interfaces = len(host_details['hostInterfaces'])
+			else:
+				self.number_of_interfaces = None
 		except Exception, err:
-			if self.manager: self.manager.log.warning("Could not add property [number_of_interfaces] to computer [%s]. Threw exception: %s" % (host_details['name'], err))
+			if self.manager: self.manager.log("Could not add property [number_of_interfaces] to computer [%s]. Threw exception: %s".format(host_details['name'], err), err=err, level='warning')
 
 	# *****************************************************************
 	# Public methods

@@ -16,7 +16,11 @@ import suds
 import cloud_account
 import computer
 import computer_group
+import firewall_rule
+import integrity_monitoring_rule
+import intrusion_prevention_rule
 import ip_list
+import log_inspection_rule
 import policy
 import soap_https_handler
 
@@ -55,6 +59,13 @@ class Manager(object):
 		self.computer_details = {}
 		self.cloud_accounts = {}
 		self.ip_lists = {}
+		self.rules = {
+			'intrusion_prevention': {},
+			'firewall': {}, 
+			'web_reputation': {},
+			'integrity_monitoring': {},
+			'log_inspection': {},
+		}
 
 		# Setup functions
 		self._debug = debug
@@ -582,6 +593,11 @@ class Manager(object):
 	def get_computers_with_details(self, detail_level='HIGH'):
 		"""
 		Get a list of all the Computers managed by Deep Security
+
+		Acceptable values for detail_level are:
+		- HIGH
+		- MEDIUM
+		- LOW
 		"""
 		host_filter_type = self.soap_client.factory.create("EnumHostFilterType")
 		host_details = self.soap_client.factory.create("EnumHostDetailLevel")
@@ -888,6 +904,7 @@ class Manager(object):
 							'to': to_timestamp,
 						}
 		result = self._make_call(call)
+		if not result: tenants = { 'computer_id_key': {} } 
 		data = self._parse_rest_response(result)
 
 		# 0--3 hostID_Type elements create an ID for the computers
@@ -942,3 +959,74 @@ class Manager(object):
 		"""
 		"""
 		pass
+
+	def get_intrusion_prevention_rules(self):
+		"""
+		Retrieve all of the intrusion prevention rules
+		"""
+		call = self._get_call_structure()
+		call['method'] = 'DPIRuleRetrieveAll'
+		call['data'] = {
+							'sID': self.session_id_soap,
+						}
+		result = self._make_call(call)
+		if result:
+			for obj in result:
+				self.rules['intrusion_prevention'][obj['ID']] = intrusion_prevention_rule.IntrusionPreventionRule(rule_details=obj, manager=self)
+
+	def get_firewall_rules(self):
+		"""
+		Retrieve all of the firewall rules
+		"""
+		call = self._get_call_structure()
+		call['method'] = 'firewallRuleRetrieveAll'
+		call['data'] = {
+							'sID': self.session_id_soap,
+						}
+		result = self._make_call(call)
+		if result:
+			for obj in result:
+				self.rules['firewall'][obj['ID']] = firewall_rule.FirewallRule(rule_details=obj, manager=self)
+
+	def get_integrity_monitoring_rules(self):
+		"""
+		Retrieve all of the integrity monitoring rules
+		"""
+		call = self._get_call_structure()
+		call['method'] = 'integrityRuleRetrieveAll'
+		call['data'] = {
+							'sID': self.session_id_soap,
+						}
+		result = self._make_call(call)	
+		if result:
+			for obj in result:
+				self.rules['integrity_monitoring'][obj['ID']] = integrity_monitoring_rule.IntegrityMonitoringRule(rule_details=obj, manager=self)
+
+	def get_log_inspection_rules(self):
+		"""
+		Retrieve all of the log inspection rules
+		"""
+		call = self._get_call_structure()
+		call['method'] = 'logInspectionRuleRetrieveAll'
+		call['data'] = {
+							'sID': self.session_id_soap,
+						}
+		result = self._make_call(call)
+		if result:
+			for obj in result:
+				self.rules['log_inspection'][obj['ID']] = log_inspection_rule.LogInspectionRule(rule_details=obj, manager=self)
+
+	def get_all_rules(self):
+		"""
+		Retrieve all of the rules from the Deep Security Manager
+
+		Calls;
+		- get_intrusion_prevention_rules
+		- get_firewall_rules
+		- get_integrity_monitoring_rules
+		- get_log_inspection_rules
+		"""
+		self.get_intrusion_prevention_rules()
+		self.get_firewall_rules()
+		self.get_integrity_monitoring_rules()
+		self.get_log_inspection_rules()
