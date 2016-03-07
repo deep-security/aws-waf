@@ -13,6 +13,7 @@ import requests
 import suds
 
 # Project libraries
+import application_type
 import cloud_account
 import computer
 import computer_group
@@ -59,6 +60,7 @@ class Manager(object):
 		self.computer_details = {}
 		self.cloud_accounts = {}
 		self.ip_lists = {}
+		self.application_types = {}
 		self.rules = {
 			'intrusion_prevention': {},
 			'firewall': {}, 
@@ -957,6 +959,7 @@ class Manager(object):
 
 	def get_tenant_overall_usage_information(self, tenant=None, from_timestamp=None, to_timestamp=None):
 		"""
+		@TODO: implement
 		"""
 		pass
 
@@ -1015,6 +1018,20 @@ class Manager(object):
 		if result:
 			for obj in result:
 				self.rules['log_inspection'][obj['ID']] = log_inspection_rule.LogInspectionRule(rule_details=obj, manager=self)
+
+	def get_all_application_types(self):
+		"""
+		Retrieve all application types from the Deep Security rules database
+		"""
+		call = self._get_call_structure()
+		call['method'] = 'applicationTypeRetrieveAll'
+		call['data'] = {
+							'sID': self.session_id_soap,
+						}
+		result = self._make_call(call)
+		if result:
+			for obj in result:
+				self.application_types[obj['ID']] = application_type.ApplicationType(type_details=obj, manager=self)
 
 	def get_all_rules(self):
 		"""
