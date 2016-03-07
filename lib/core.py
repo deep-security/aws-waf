@@ -28,6 +28,9 @@ def get_arg_parser(prog='ds-to-aws-waf.py', description=None):
   parser.add_argument('-p', '--dsm-password', action='store', dest='dsm_password', required=True, help='The password for the specified Deep Security username. Should only have read-only rights to IP lists and API access')
   parser.add_argument('-t', '--dsm-tenant', action='store', dest='dsm_tenant', required=False, default=None, help='The name of the Deep Security tenant/account')
 
+  # AWS arguments
+  parser.add_argument('-r', '--aws-region', action='store', dest='aws_region', required=False, default=None, help='The name of AWS region to connect to')
+
   # general structure arguments
   parser.add_argument('--ignore-ssl-validation', action='store_true', dest='ignore_ssl_validation', required=False, help='Ignore SSL certification validation. Be careful when you use this as it disables a recommended security check. Required for Deep Security Managers using a self-signed SSL certificate')
   parser.add_argument('--dryrun', action='store_true', required=False, help='Do a dry run of the command. This will not make any changes to your AWS WAF service')
@@ -39,9 +42,13 @@ class StoreNameValuePairOnEquals(argparse.Action):
   """
   Store a set of name value pairs as an argument
   """
+  def __init__(self, option_strings, dest, nargs=None, const=None, default=None, type=None, choices=None, required=False, help=None, metavar=None):
+    self.dest = dest
+    argparse.Action.__init__(self, option_strings, dest, nargs=nargs, const=const, default=default, type=type, choices=choices, required=required, help=help, metavar=metavar)
+
   # cribbed from http://stackoverflow.com/questions/5154716/using-argparse-to-parse-arguments-of-form-arg-val
   # response by @chepner (http://stackoverflow.com/users/1126841/chepner)
-  def __call__(self, parser, namespace, values, option_string=None):
+  def __call__(self, parser, namespace, values, dest, option_string=None):#
     pairs = {}
     for val in values:
       if '=' in val:
@@ -50,7 +57,9 @@ class StoreNameValuePairOnEquals(argparse.Action):
       else:
         pairs[v] = '' # matches key:
 
-    if option_string:
+    if self.dest:
+      setattr(namespace, self.dest, pairs)
+    elif option_string:
       setattr(namespace, option_string.strip('-'), pairs)
 
 class ScriptContext():
@@ -151,6 +160,10 @@ class ScriptContext():
     return dsm 
 
   def _connect_to_aws_waf(self):
+    """
+    Connect to AWS WAF via explicit credentials (shared by the AWS CLI)
+    or an instance role
+    """
     waf = None
     try:
       aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'])
@@ -165,6 +178,27 @@ class ScriptContext():
         self._log("Could not connect to AWS WAF using an instance role", err=err)  
 
     return waf
+
+  def _connect_to_aws_ec2(self):
+    """
+    Connect to AWS EC2 via explicit credentials (shared by the AWS CLI)
+    or an instance role
+    """
+    ec2 = None
+    try:
+      aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'], region_name=self.args.aws_region)
+      ec2 = aws.client('ec2') 
+      self._log("Connected to AWS EC2")
+    except Exception, err: 
+      self._log("Could not connect to AWS EC2 using local CLI credentials", err=err)
+      try:
+        aws = boto3.session.Session(region_name=self.args.aws_region)
+        ec2 = aws.client('ec2') 
+        self._log("Connected to AWS EC2")
+      except Exception, err:
+        self._log("Could not connect to AWS EC2 using an instance role", err=err)  
+
+    return ec2    
 
   def get_available_aws_sets(self):
     """
