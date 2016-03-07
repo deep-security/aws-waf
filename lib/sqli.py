@@ -2,6 +2,7 @@
 import argparse
 import inspect
 import os
+import re
 import urllib2
 
 # 3rd party libraries
@@ -175,11 +176,21 @@ class Script(core.ScriptContext):
           if 'tbuid' in dir(rule):
             if rule.tbuid in self.tbuids:
               sqli_recommendations.append(rule)
+              continue
 
           if 'application_type_id' in dir(rule):
             if self.dsm.application_types.has_key(rule.application_type_id):
               if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
                 sqli_recommendations.append(rule)
+                continue
+
+          for pattern in self.patterns:
+            for attr in [rule.name, rule.description]:
+              try:
+                m = re.search(pattern, attr)
+                if m:
+                  sqli_recommendations.append(rule)
+              except Exception, err: pass # @TODO handle this gracefully
           
       if len(sqli_recommendations) > 1:
         recommendation = True if len(sqli_recommendations) > 0 else False
