@@ -1,4 +1,4 @@
-# Standard libraries
+# standard libraries
 import argparse
 import os
 import urllib2
@@ -8,7 +8,7 @@ import boto3
 import boto3.session
 import netaddr
 
-# Project libraries
+# project libraries
 import core
 import deepsecurity.manager
 

@@ -35,6 +35,24 @@ def get_arg_parser(prog='ds-to-aws-waf.py', description=None):
 
   return parser
 
+class StoreNameValuePairOnEquals(argparse.Action):
+  """
+  Store a set of name value pairs as an argument
+  """
+  # cribbed from http://stackoverflow.com/questions/5154716/using-argparse-to-parse-arguments-of-form-arg-val
+  # response by @chepner (http://stackoverflow.com/users/1126841/chepner)
+  def __call__(self, parser, namespace, values, option_string=None):
+    pairs = {}
+    for val in values:
+      if '=' in val:
+        n, v = val.split('=')
+        pairs[n] = v # matches key:pair
+      else:
+        pairs[v] = '' # matches key:
+
+    if option_string:
+      setattr(namespace, option_string.strip('-'), pairs)
+
 class ScriptContext():
   """
   Context for a command line script.
