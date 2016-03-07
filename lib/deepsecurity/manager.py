@@ -528,7 +528,9 @@ class Manager(object):
 		   - policies
 		   - cloud accounts
 		   - ip lists
+		   - application types
 		"""
+		self.get_all_application_types()
 		self.get_computer_groups()
 		self.get_computers_with_details()
 		self.get_policies()
