@@ -57,11 +57,17 @@ class StoreNameValuePairOnEquals(argparse.Action):
       else:
         pairs[v] = '' # matches key:
 
-    if self.dest:
-      setattr(namespace, self.dest, pairs)
-    elif option_string:
-      setattr(namespace, option_string.strip('-'), pairs)
-
+    attr_key = option_string.strip('-') if option_string else ""
+    if self.dest: attr_key = self.dest
+    
+    current_pairs = getattr(namespace, attr_key)
+    if attr_key in dir(namespace) and current_pairs != None:
+      new_pairs = current_pairs.copy()
+      new_pairs.update(pairs)
+      setattr(namespace, attr_key, new_pairs)
+    else:
+      setattr(namespace, attr_key, pairs)
+    
 class ScriptContext():
   """
   Context for a command line script.
