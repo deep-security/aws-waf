@@ -150,10 +150,10 @@ class Script(core.ScriptContext):
         self._log("Deep Security does not have instance {} in inventory".format(instance_id)) 
         recommendations[instance_id] = None
 
-    self._log("Completed recommendation phase")
-    self._log("   Instance\tRecommendation")
+    self._log("Completed recommendation phase", priority=True)
+    self._log("   Instance\tRecommendation", priority=True)
     for instance_id, recommendation in recommendations.items():
-      print "   {}\t{}".format(instance_id, recommendation)
+      print "   {}\t{}".format(instance_id, recommendation, priority=True)
 
   def analyze_computer(self, ds_computer_id):
     """
