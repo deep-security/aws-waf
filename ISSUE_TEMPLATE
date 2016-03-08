@@ -1,0 +1,21 @@
+Thanks for taking the time to submit an issue. There's a couple of things that will make this easier for everyone involve. If you could please take the time to complete the list below, it's much appreciated.
+
+- [ ] I'm using Deep Security version ____
+
+- [ ] I'm using the latest version of this repo
+
+- [ ] My Deep Security Manager has a self-signed or non-validating SSL certificate
+
+## Current Output
+
+Please re-run the command using ```--verbose``` and provide the complete output below.
+
+## Addition Details
+
+Can you also please fill in each of the remaining sections.
+
+### Expected behaviour 
+
+### Actual behaviour
+
+### Steps to reproduce the behaviour

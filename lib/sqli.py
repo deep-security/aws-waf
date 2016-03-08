@@ -120,6 +120,7 @@ class Script(core.ScriptContext):
     Get all of the relevant information from Deep Security in order
     to build a smart rule set for AWS WAF
     """
+    self._log("Requesting information from Deep Security about your deployment", priority=True)
     if self.dsm:
       self.dsm.get_all()
       self._log("Requesting rules from the Deep Security manager. This will take a few seconds...")
@@ -165,27 +166,32 @@ class Script(core.ScriptContext):
         'log_inspection_rules',
         'intrusion_prevention_rules'
         ]:
-        for rule_id in getattr(self.dsm.policies[computer.policy_id], rule_type)[-1]:
-          rule = self.dsm.rules[rule_type.replace('_rules', '')][rule_id]
-          if 'tbuid' in dir(rule):
-            if rule.tbuid in self.tbuids:
-              sqli_recommendations.append(rule)
-              continue
-
-          if 'application_type_id' in dir(rule):
-            if self.dsm.application_types.has_key(rule.application_type_id):
-              if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
+        if self.dsm.policies.has_key(computer.policy_id):
+          print ">>> {}".format(computer.policy_id)
+          print ">>> {}".format(self.dsm.policies[computer.policy_id])
+          for rule_id in getattr(self.dsm.policies[computer.policy_id], rule_type)[-1]:
+            rule = self.dsm.rules[rule_type.replace('_rules', '')][rule_id]
+            if 'tbuid' in dir(rule):
+              if rule.tbuid in self.tbuids:
                 sqli_recommendations.append(rule)
                 continue
 
-          for pattern in self.patterns:
-            for attr in [rule.name, rule.description]:
-              try:
-                m = re.search(pattern, attr)
-                if m:
+            if 'application_type_id' in dir(rule):
+              if self.dsm.application_types.has_key(rule.application_type_id):
+                if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
                   sqli_recommendations.append(rule)
-              except Exception, err: pass # @TODO handle this gracefully
-          
+                  continue
+
+            for pattern in self.patterns:
+              for attr in [rule.name, rule.description]:
+                try:
+                  m = re.search(pattern, attr)
+                  if m:
+                    sqli_recommendations.append(rule)
+                except Exception, err: pass # @TODO handle this gracefully
+        else:
+          self._log("Policy {} is not available for analysis".format(computer.policy_id))
+
       if len(sqli_recommendations) > 1:
         recommendation = True if len(sqli_recommendations) > 0 else False
         self._log("Found {} rules indicating this instance should be protected by an SQLi rule set".format(len(sqli_recommendations)))
