@@ -1,3 +1,5 @@
+> This commit has breaking changes that will stay firm moving forward. For original, early adopters please use [release v0.91](https://github.com/deep-security/aws-waf/releases/tag/v0.91)...but move to the current one when you can, it's **way better** ;-)
+
 # Deep Security AWS WAF Integration
 
 A simple tool set to help build AWS WAF rule sets from Deep Security. 
