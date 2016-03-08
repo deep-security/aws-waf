@@ -150,6 +150,31 @@ class Script(core.ScriptContext):
 
     return recommendations
 
+  def does_rule_match_sqli(self, rule):
+    """
+    Determine if a rule matches the defined parameters for an 
+    SQLi recommendation
+    """
+    sqli_recommended = False
+    if 'tbuid' in dir(rule):
+      sqli_recommended = True
+
+    if 'application_type_id' in dir(rule):
+      if self.dsm.application_types.has_key(rule.application_type_id):
+        if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
+          sqli_recommended = True
+
+    for pattern in self.patterns:
+      if 'name' in dir(rule) and 'description' in dir(rule):
+        for attr in [rule.name, rule.description]:
+          try:
+            m = re.search(pattern, attr)
+            if m:
+              sqli_recommended = True
+          except Exception, err: pass # @TODO handle this gracefully
+
+    return sqli_recommended
+
   def analyze_computer(self, ds_computer_id):
     """
     Analyze the specified computer to determine if it should be 
@@ -157,10 +182,13 @@ class Script(core.ScriptContext):
     """
     self._log("Analyzing computer {}:{}".format(ds_computer_id, self.dsm.computers[ds_computer_id].hostname))
     recommendation = False
+    self.dsm.get_recommended_rules_for_computer(ds_computer_id)
     computer = self.dsm.computers[ds_computer_id]
+    sqli_recommendations = []
+      
+    # check at the policy level
     if computer.policy_id:
       self._log("Computer is protected by Deep Security. Checking rules")
-      sqli_recommendations = []
       for rule_type in [
         'integrity_monitoring_rules',
         'log_inspection_rules',
@@ -171,35 +199,28 @@ class Script(core.ScriptContext):
           if rule_set: # policy has these type of rules applied
             for rule_id in getattr(self.dsm.policies[computer.policy_id], rule_type)[-1]:
               rule = self.dsm.rules[rule_type.replace('_rules', '')][rule_id]
-              if 'tbuid' in dir(rule):
-                if rule.tbuid in self.tbuids:
-                  sqli_recommendations.append(rule)
-                  continue
-
-              if 'application_type_id' in dir(rule):
-                if self.dsm.application_types.has_key(rule.application_type_id):
-                  if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
-                    sqli_recommendations.append(rule)
-                    continue
-
-              for pattern in self.patterns:
-                for attr in [rule.name, rule.description]:
-                  try:
-                    m = re.search(pattern, attr)
-                    if m:
-                      sqli_recommendations.append(rule)
-                  except Exception, err: pass # @TODO handle this gracefully
+              if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
           else:
             self._log("Instance {} has no rules of type {} applied".format(computer.cloud_object_instance_id, rule_type))
         else:
           self._log("Policy {} is not available for analysis".format(computer.policy_id))
-
-      if len(sqli_recommendations) > 1:
-        recommendation = True if len(sqli_recommendations) > 0 else False
-        self._log("Found {} rules indicating this instance should be protected by an SQLi rule set".format(len(sqli_recommendations)))
     else:
-      self._log("Deep Security is aware of the instance but is not protecting it")
+      self._log("Deep Security is aware of the instance but is not protecting it with a policy")
       recommendation = None
+
+    # now check for any recommendations to the computer
+    for rule_type, rules in computer.recommended_rules.items():
+      self._log("Checking for recommended {} rules".format(rule_type))
+      for rule_id, rule in rules.items():
+        if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
+      
+      for application_type_id, application_type in computer.application_types.items():
+        if application_type.tbuid in self.tbuids:
+          sqli_recommendations.append(application_type)
+
+    if len(sqli_recommendations) > 1:
+      recommendation = True if len(sqli_recommendations) > 0 else False
+      self._log("Found {} rules indicating this instance should be protected by an SQLi rule set".format(len(sqli_recommendations)))
 
     return recommendation
 
