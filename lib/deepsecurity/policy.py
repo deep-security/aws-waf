@@ -33,7 +33,7 @@ class Policy:
 			   'applicationTypeIDs': 'application_types',
 			   'firewallRuleIDs': 'firewall_rules',
 			   'firewallState': 'firewall_state',
-			   'integrityRuleIDs': 'integrity_rules',
+			   'integrityRuleIDs': 'integrity_monitoring_rules',
 			   'integrityState': 'integrity_state',
 			   'logInspectionRuleIDs': 'log_inspection_rules',
 			   'logInspectionState': 'log_inspection_state',
