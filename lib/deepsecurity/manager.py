@@ -1062,11 +1062,11 @@ class Manager(object):
 			'LOGINSPECTIONRULE': 'log_inspection',
 		}
 		recommendation_rule_types = {
-			'APPLICATIONTYPE': 0,
-			'PAYLOADFILTER': 1,
-			'FIREWALLRULE': 2,
-			'INTEGRITYRULE': 3,
-			'LOGINSPECTIONRULE': 4,
+			'APPLICATIONTYPE': 1,
+			'PAYLOADFILTER': 2,
+			'FIREWALLRULE': 3,
+			'INTEGRITYRULE': 4,
+			'LOGINSPECTIONRULE': 5,
 		}
 		for rule_type, rule_type_id in recommendation_rule_types.items():
 			call = self._get_call_structure()
