@@ -93,6 +93,49 @@ Currently Deep Security treats API access just like a user logging in. Therefore
 ### iplsits
 
 ```
+ # ./ds-to-aws-waf.py iplist --help
+usage: ds-to-aws-waf.py iplists [-h] [-d DSM] [--dsm-port DSM_PORT] -u
+                                DSM_USERNAME -p DSM_PASSWORD [-t DSM_TENANT]
+                                [-r AWS_REGION] [--ignore-ssl-validation]
+                                [--dryrun] [--verbose] [-l] [-i IP_LIST]
+
+Create and update AWS WAF WACL rules based on information from a Deep Security
+installation
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DSM, --dsm DSM     The address of the Deep Security Manager. Defaults to
+                        Deep Security as a Service
+  --dsm-port DSM_PORT   The address of the Deep Security Manager. Defaults to
+                        an AWS Marketplace/software install (:4119).
+                        Automatically configured for Deep Security as a
+                        Service
+  -u DSM_USERNAME, --dsm-username DSM_USERNAME
+                        The Deep Security username to access the IP Lists
+                        with. Should only have read-only rights to IP lists
+                        and API access
+  -p DSM_PASSWORD, --dsm-password DSM_PASSWORD
+                        The password for the specified Deep Security username.
+                        Should only have read-only rights to IP lists and API
+                        access
+  -t DSM_TENANT, --dsm-tenant DSM_TENANT
+                        The name of the Deep Security tenant/account
+  -r AWS_REGION, --aws-region AWS_REGION
+                        The name of AWS region to connect to
+  --ignore-ssl-validation
+                        Ignore SSL certification validation. Be careful when
+                        you use this as it disables a recommended security
+                        check. Required for Deep Security Managers using a
+                        self-signed SSL certificate
+  --dryrun              Do a dry run of the command. This will not make any
+                        changes to your AWS WAF service
+  --verbose             Enabled verbose output for the script. Useful for
+                        debugging
+  -l, --list            List the available Deep Security IP Lists and the AWS
+                        WAF IP Sets
+  -i IP_LIST, --id IP_LIST
+                        Specify an IP List by ID within Deep Security as the
+                        source for the AWS WAF IP Set
 ```
 
 <a name="usage-sqli" />
@@ -100,6 +143,50 @@ Currently Deep Security treats API access just like a user logging in. Therefore
 ### sqli
 
 ```
+# ./ds-to-aws-waf.py sqli --help
+usage: ds-to-aws-waf.py sqli [-h] [-d DSM] [--dsm-port DSM_PORT] -u
+                             DSM_USERNAME -p DSM_PASSWORD [-t DSM_TENANT]
+                             [-r AWS_REGION] [--ignore-ssl-validation]
+                             [--dryrun] [--verbose] [-l]
+                             [--tag TAGS [TAGS ...]] [--create-match]
+
+Create and update AWS WAF WACL rules based on information from a Deep Security
+installation
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DSM, --dsm DSM     The address of the Deep Security Manager. Defaults to
+                        Deep Security as a Service
+  --dsm-port DSM_PORT   The address of the Deep Security Manager. Defaults to
+                        an AWS Marketplace/software install (:4119).
+                        Automatically configured for Deep Security as a
+                        Service
+  -u DSM_USERNAME, --dsm-username DSM_USERNAME
+                        The Deep Security username to access the IP Lists
+                        with. Should only have read-only rights to IP lists
+                        and API access
+  -p DSM_PASSWORD, --dsm-password DSM_PASSWORD
+                        The password for the specified Deep Security username.
+                        Should only have read-only rights to IP lists and API
+                        access
+  -t DSM_TENANT, --dsm-tenant DSM_TENANT
+                        The name of the Deep Security tenant/account
+  -r AWS_REGION, --aws-region AWS_REGION
+                        The name of AWS region to connect to
+  --ignore-ssl-validation
+                        Ignore SSL certification validation. Be careful when
+                        you use this as it disables a recommended security
+                        check. Required for Deep Security Managers using a
+                        self-signed SSL certificate
+  --dryrun              Do a dry run of the command. This will not make any
+                        changes to your AWS WAF service
+  --verbose             Enabled verbose output for the script. Useful for
+                        debugging
+  -l, --list            List the available EC2 instances
+  --tag TAGS [TAGS ...]
+                        Specify the tags to filter the EC2 instances by
+  --create-match        Create the SQLi match condition for use in various
+                        rules
 ```
 
 <a name="ssl-certificate-validation" />
