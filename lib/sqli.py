@@ -27,8 +27,8 @@ def run_script(args):
     script.connect()
     script.get_ec2_instances()
     script.get_deep_security_info()
-    script.compare_ec2_to_deep_security()
-    #script.print_lists()
+    recommendations = script.compare_ec2_to_deep_security()
+    script.print_recommendations(recommendations)
 
   a ="""
   elif script.args.ip_list:
@@ -150,10 +150,7 @@ class Script(core.ScriptContext):
         self._log("Deep Security does not have instance {} in inventory".format(instance_id)) 
         recommendations[instance_id] = None
 
-    self._log("Completed recommendation phase", priority=True)
-    self._log("   Instance\tRecommendation", priority=True)
-    for instance_id, recommendation in recommendations.items():
-      print "   {}\t{}".format(instance_id, recommendation, priority=True)
+    return recommendations
 
   def analyze_computer(self, ds_computer_id):
     """
@@ -200,3 +197,15 @@ class Script(core.ScriptContext):
       recommendation = None
 
     return recommendation
+
+  def print_recommendations(self, recommendations):
+    """
+    Print the recommendations for each instance
+    """
+    self._log("************************************************************************", priority=True)
+    self._log("Completed recommendation phase", priority=True)
+    self._log("   Instance\tRecommendation", priority=True)
+    for instance_id, recommendation in recommendations.items():
+      print "   {}\t{}".format(instance_id, recommendation, priority=True)
+      
+    self._log("************************************************************************", priority=True)      
