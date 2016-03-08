@@ -19,6 +19,8 @@ def run_script(args):
   parser = core.get_arg_parser(prog='ds-to-aws-waf.py sqli')
   parser.add_argument('-l', '--list', action='store_true', required=False, help='List the available EC2 instances')
   parser.add_argument('--tag', action=core.StoreNameValuePairOnEquals, nargs="+", dest="tags", required=False, help='Specify the tags to filter the EC2 instances by')
+
+  parser.add_argument('--create-match', action='store_true', required=False, dest="create_match", help='Create the SQLi match condition for use in various rules')
   
   script = Script(args[1:], parser)
 
@@ -30,21 +32,16 @@ def run_script(args):
     recommendations = script.compare_ec2_to_deep_security()
     script.print_recommendations(recommendations)
 
-  a ="""
-  elif script.args.ip_list:
+  if script.args.create_match:
     script.connect()
     if script.args.dryrun:
       script._log("***********************************************************************", priority=True)
       script._log("* DRY RUN ENABLED. NO CHANGES WILL BE MADE", priority=True)
       script._log("***********************************************************************", priority=True)
-    # get the specified Deep Security IP Lists (already cached)
-    ip_list = script.get_ds_list(script.args.ip_list)
-    # create the IP Set
-    if ip_list:
-      script.create_ip_set(ip_list)
+    
+    # create the recommend SQLi match condition
+    script.create_match_condition()
 
-  script.clean_up()
-  """
   script.clean_up()
 
 class Script(core.ScriptContext):
@@ -207,5 +204,73 @@ class Script(core.ScriptContext):
     self._log("   Instance\tRecommendation", priority=True)
     for instance_id, recommendation in recommendations.items():
       print "   {}\t{}".format(instance_id, recommendation, priority=True)
-      
+
     self._log("************************************************************************", priority=True)      
+
+  def create_match_condition(self):
+    """
+    Create the recommend SQLi match condition
+    """
+    MATCH_SET_NAME = "Deep Security SQLi Guidance"
+
+    # does the match set already exist?
+    exists = False
+    response = self.waf.list_sql_injection_match_sets(Limit=100)
+    if response and response.has_key('SqlInjectionMatchSets'):
+      for match_set in response['SqlInjectionMatchSets']:
+        if match_set['Name'] == MATCH_SET_NAME:
+          exists = True
+          break
+
+    if exists:
+      self._log("Desired SQLi match set already exists. No action needed")
+    else:
+      self._log("Attempting to create a new SQLi match set; {}".format(MATCH_SET_NAME))
+      sqli_match_set_updates = [
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'URI', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},
+        ]
+      if not self.args.dryrun:
+        # get a change token
+        change_token = self._get_aws_waf_change_token()
+        if change_token:
+          # create the match set
+          match_set_id = None
+          try:
+            response = self.waf.create_sql_injection_match_set(
+              Name=MATCH_SET_NAME,
+              ChangeToken=change_token
+              )
+            self._log("Created a new SQLi match set: {}".format(MATCH_SET_NAME))
+
+            if response and response.has_key('SqlInjectionMatchSet') and response['SqlInjectionMatchSet'].has_key('SqlInjectionMatchSetId'):
+              match_set_id = response['SqlInjectionMatchSet']['SqlInjectionMatchSetId']
+
+          except Exception, err:
+            self._log("Could not create a new SQLi match set", err=err)
+            return
+
+          if match_set_id:
+            # get another change token
+            change_token = self._get_aws_waf_change_token()
+            if change_token:
+              # update the match set
+              try:
+                response = self.waf.update_sql_injection_match_set(
+                  SqlInjectionMatchSetId=match_set_id,
+                  ChangeToken=change_token,
+                  Updates=sqli_match_set_updates
+                  )
+                self._log("Updated SQLi match set; {}".format(MATCH_SET_NAME), priority=True)
+              except Exception, err:
+                self._log("Unable to update SQLi match set", err=err)
+      else:
+        self._log("Would request an AWS WAF change token to create a new SQLi match set", priority=True)
+        self._log("   SQLi match set will contain;", priority=True)
+        for update in sqli_match_set_updates:
+          self._log("      {}".format(update), priority=True)
