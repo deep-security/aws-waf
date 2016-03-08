@@ -210,6 +210,8 @@ class Script(core.ScriptContext):
   def create_match_condition(self):
     """
     Create the recommend SQLi match condition
+
+    Reference for SQLi match sets is available at http://docs.aws.amazon.com/waf/latest/developerguide/web-acl-sql-conditions.html
     """
     MATCH_SET_NAME = "Deep Security SQLi Guidance"
 

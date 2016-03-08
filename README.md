@@ -90,7 +90,7 @@ Currently Deep Security treats API access just like a user logging in. Therefore
 
 <a name="usage-iplists" />
 
-### iplsits
+### iplists
 
 ```
  # ./ds-to-aws-waf.py iplist --help
