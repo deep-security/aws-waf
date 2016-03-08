@@ -92,7 +92,33 @@ Currently Deep Security treats API access just like a user logging in. Therefore
 
 ### iplists
 
-Complete syntax;
+The iplists command is a simple, two-step process. You must first find the ID of the list in Deep Security and then push that IP list to an AWS WAF IP set.
+
+**Step 1;**
+
+```
+# list the available IP lists in Deep Security
+# ...for Deep Security as a Service
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l
+
+# ...for another Deep Security manager
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
+```
+
+This command will then display a list of IP lists and their associated IDs. You can then use those IDs to push the IP list to AWS WAF as an IP Set.
+
+**Step 2;**
+
+```
+# push a Deep Security IP list to an AWS WAF IP Set
+# ...for Deep Security as a Service
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -i 17
+
+# ...for another Deep Security manager
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -i 17
+```
+
+The complete command syntax is;
 
 ```
  # ./ds-to-aws-waf.py iplist --help
@@ -138,28 +164,6 @@ optional arguments:
   -i IP_LIST, --id IP_LIST
                         Specify an IP List by ID within Deep Security as the
                         source for the AWS WAF IP Set
-```
-
-While the list of options might seem a bit overwhelming, the common usages are;
-
-```
-# list the available IP lists in Deep Security
-# ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l
-
-# ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
-```
-
-This command will then display a list of IP lists and their associated IDs. You can then use those IDs to push the IP list to AWS WAF as an IP Set.
-
-```
-# push a Deep Security IP list to an AWS WAF IP Set
-# ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -i 17
-
-# ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -i 17
 ```
 
 <a name="usage-sqli" />
