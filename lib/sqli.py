@@ -167,28 +167,28 @@ class Script(core.ScriptContext):
         'intrusion_prevention_rules'
         ]:
         if self.dsm.policies.has_key(computer.policy_id):
-          print ">>> {}".format(computer.policy_id)
-          print ">>> {}".format(self.dsm.policies[computer.policy_id])
-          for rule_id in getattr(self.dsm.policies[computer.policy_id], rule_type)[-1]:
-            rule = self.dsm.rules[rule_type.replace('_rules', '')][rule_id]
-            if 'tbuid' in dir(rule):
-              if rule.tbuid in self.tbuids:
-                sqli_recommendations.append(rule)
-                continue
-
-            if 'application_type_id' in dir(rule):
-              if self.dsm.application_types.has_key(rule.application_type_id):
-                if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
+          rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
+          if rule_set: # policy has these type of rules applied
+            for rule_id in getattr(self.dsm.policies[computer.policy_id], rule_type)[-1]:
+              rule = self.dsm.rules[rule_type.replace('_rules', '')][rule_id]
+              if 'tbuid' in dir(rule):
+                if rule.tbuid in self.tbuids:
                   sqli_recommendations.append(rule)
                   continue
 
-            for pattern in self.patterns:
-              for attr in [rule.name, rule.description]:
-                try:
-                  m = re.search(pattern, attr)
-                  if m:
+              if 'application_type_id' in dir(rule):
+                if self.dsm.application_types.has_key(rule.application_type_id):
+                  if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
                     sqli_recommendations.append(rule)
-                except Exception, err: pass # @TODO handle this gracefully
+                    continue
+
+              for pattern in self.patterns:
+                for attr in [rule.name, rule.description]:
+                  try:
+                    m = re.search(pattern, attr)
+                    if m:
+                      sqli_recommendations.append(rule)
+                  except Exception, err: pass # @TODO handle this gracefully
         else:
           self._log("Policy {} is not available for analysis".format(computer.policy_id))
 
