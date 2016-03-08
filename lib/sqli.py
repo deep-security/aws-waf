@@ -16,7 +16,7 @@ import deepsecurity.manager
 
 def run_script(args):
   # configure the command line args
-  parser = core.get_arg_parser(prog='ds-to-aws-waf.py sqli')
+  parser = core.get_arg_parser(prog='ds-to-aws-waf.py sqli', add_help=True)
   parser.add_argument('-l', '--list', action='store_true', required=False, help='List the available EC2 instances')
   parser.add_argument('--tag', action=core.StoreNameValuePairOnEquals, nargs="+", dest="tags", required=False, help='Specify the tags to filter the EC2 instances by')
 

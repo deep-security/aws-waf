@@ -5,7 +5,9 @@ A simple tool set to help build AWS WAF rule sets from Deep Security.
 ## Index
 
 - [Pre-Requisites](#pre-requisites)
-- [Basic Usage](#basic-usage)
+- [Usage](#usage)
+   - [iplists](#usage-iplists)
+   - [sqli](#usage-sqli)
 - [SSL Certificate Validation](#ssl-certificate-validation)
 - [AWS WAF Costs](#aws-waf-costs)
   - [iplists](#aws-waf-costs-iplists)
@@ -19,9 +21,9 @@ A simple tool set to help build AWS WAF rule sets from Deep Security.
 pip install -r requirements.txt
 ```
 
-<a name="basic-usage" />
+<a name="usage" />
 
-### Basic Usage
+### Usage
 
 The syntax for basic command line usage is available by using the ```--help``` switch.
 
@@ -85,6 +87,20 @@ Each individual command will also have it's own options that allow you to contro
 You'll notice in the examples, the password is set to USE_RBAC_TO_REDUCE_RISK. In this context, RBAC stands for role based access control.
 
 Currently Deep Security treats API access just like a user logging in. Therefore it is strongly recommended that you create a new Deep Security user for use with this script. This user should have the bare minimum permissions required to complete the tasks.
+
+<a name="usage-iplists" />
+
+### iplsits
+
+```
+```
+
+<a name="usage-sqli" />
+
+### sqli
+
+```
+```
 
 <a name="ssl-certificate-validation" />
 

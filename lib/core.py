@@ -10,7 +10,7 @@ import boto3.session
 # project libraries
 import deepsecurity
 
-def get_arg_parser(prog='ds-to-aws-waf.py', description=None):
+def get_arg_parser(prog='ds-to-aws-waf.py', description=None, add_help=False):
   """
   Create a standardized argument parser
   """
@@ -19,7 +19,7 @@ def get_arg_parser(prog='ds-to-aws-waf.py', description=None):
     Create and update AWS WAF WACL rules based on information from a Deep Security installation
 """
 
-  parser = argparse.ArgumentParser(prog=prog, description=description)
+  parser = argparse.ArgumentParser(prog=prog, description=description, add_help=add_help)
 
   # Deep Security arguments
   parser.add_argument('-d', '--dsm', action='store', default='app.deepsecurity.trendmicro.com', required=False, help='The address of the Deep Security Manager. Defaults to Deep Security as a Service')
