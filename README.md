@@ -170,6 +170,42 @@ optional arguments:
 
 ### sqli
 
+The sqli command contains two parts; the analysis of the workloads on the specified EC2 instances and the creation of an SQLi match condition.
+
+You can run either part separately, though **the creation of the match condition only needs to be run once per account.**
+
+Common usage;
+
+```
+# create a new SQLi match condition 
+# ...for Deep Security as a Service
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT --create-match
+
+# ...for another Deep Security manager
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation --create-match
+```
+
+To find out which instances should be protected by an AWS WAF SQLi rule;
+
+```
+# find out which instances should be protected by an AWS WAF SQLi rule
+# ...for Deep Security as a Service
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l
+
+# ...for another Deep Security manager
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
+
+# filter those instances by tag and region
+# ...for Deep Security as a Service
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l --tag Name=Test --tag Environment=PROD -r us-east-1
+
+# ...for another Deep Security manager
+python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l --tag Name=Test --tag Environment=PROD -r us-east-1
+
+```
+
+The complete command syntax is;
+
 ```
 # ./ds-to-aws-waf.py sqli --help
 usage: ds-to-aws-waf.py sqli [-h] [-d DSM] [--dsm-port DSM_PORT] -u
