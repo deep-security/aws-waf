@@ -2,11 +2,24 @@
 
 A simple tool set to help build AWS WAF rule sets from Deep Security. 
 
+## Index
+
+- [Pre-Requisites](#pre-requisites)
+- [Basic Usage](#basic-usage)
+- [SSL Certificate Validation](#ssl-certificate-validation)
+- [AWS WAF Costs](#aws-waf-costs)
+  - [iplists](#aws-waf-costs-iplists)
+  - [sqli](#aws-waf-costs-sqli)
+
+<a name="pre-requisites" />
+
 ## Pre-Requisites
 
 ```bash
 pip install -r requirements.txt
 ```
+
+<a name="basic-usage" />
 
 ### Basic Usage
 
@@ -73,6 +86,8 @@ You'll notice in the examples, the password is set to USE_RBAC_TO_REDUCE_RISK. I
 
 Currently Deep Security treats API access just like a user logging in. Therefore it is strongly recommended that you create a new Deep Security user for use with this script. This user should have the bare minimum permissions required to complete the tasks.
 
+<a name="ssl-certificate-validation" />
+
 ## SSL Certificate Validation
 
 If the Deep Security Manager (DSM) you're connecting to was installed via software of the AWS Marketplace, there's a chance that it is still using the default, self-signed SSL certificate. By default, python checks the certificate for validity which it cannot do with self-signed certificates.
@@ -106,6 +121,8 @@ And during execution you may see lines similar to;
 
 These are expected warnings. Can you tell that we (and the python core teams) are trying to tell you something? If you're interesting in using a valid SSL certificate, you can get one for free from [Let's Encrypt](https://letsencrypt.org), [AWS themselves](https://aws.amazon.com/certificate-manager/) (if your DSM is behind an ELB), or explore commercial options (like the [one from Trend Micro](http://www.trendmicro.com/us/enterprise/cloud-solutions/deep-security/ssl-certificates/)).
 
+<a name="aws-waf-costs" />
+
 ## AWS WAF Costs
 
 The commands available in this repository are designed to help you build better rule sets for AWS WAF based on what Deep Security understands about your workloads.
@@ -116,9 +133,13 @@ AWS WAF charges for each web access control list (WACL), for each rule, and for 
 
 We've done our best to ensure that each command optimizes the changes it makes in AWS WAF in order to reduce your costs. In general, you can run a command with the ```--dryrun``` option to see the results without making changes and before incurring any costs.
 
+<a name="aws-waf-costs-iplists" />
+
 ### iplists
 
 The *iplists* command does not create a WACL or rule on your behalf. It creates new IPSet objects that can be used in an AWS WAF rule as a match condition. There are no charges for these IPSets.
+
+<a name="aws-waf-costs-sqli" />
 
 ### sqli
 
