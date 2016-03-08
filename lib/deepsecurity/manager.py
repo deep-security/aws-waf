@@ -528,7 +528,7 @@ class Manager(object):
 		   - policies
 		   - cloud accounts
 		   - ip lists
-		   - application types
+		   - application type ids
 		"""
 		self.get_all_application_types()
 		self.get_computer_groups()
@@ -1049,3 +1049,39 @@ class Manager(object):
 		self.get_firewall_rules()
 		self.get_integrity_monitoring_rules()
 		self.get_log_inspection_rules()
+
+	def get_recommended_rules_for_computer(self, computer_id):
+		"""
+		Retrieve all of the rules recommend for the specific computer
+		"""
+		rule_type_map = {
+			'APPLICATIONTYPE': 'application_type',
+			'PAYLOADFILTER': 'intrusion_prevention',
+			'FIREWALLRULE': 'firewall',
+			'INTEGRITYRULE': 'integrity_monitoring',
+			'LOGINSPECTIONRULE': 'log_inspection',
+		}
+		recommendation_rule_types = {
+			'APPLICATIONTYPE': 0,
+			'PAYLOADFILTER': 1,
+			'FIREWALLRULE': 2,
+			'INTEGRITYRULE': 3,
+			'LOGINSPECTIONRULE': 4,
+		}
+		for rule_type, rule_type_id in recommendation_rule_types.items():
+			call = self._get_call_structure()
+			call['method'] = 'hostRecommendationRuleIDsRetrieve'
+			call['data'] = {
+								'sID': self.session_id_soap,
+								'hostID': computer_id,
+								'type': rule_type_id,
+								'onlyunassigned': False,
+							}
+			result = self._make_call(call)
+			if result:
+				recommended_rule_type = rule_type_map[rule_type]
+				if recommended_rule_type == 'application_type':
+					self.computers[computer_id].application_types[obj] = self.application_types[obj] if self.application_types.has_key(obj) else None
+				else:					
+					for obj in result:
+						self.computers[computer_id].recommended_rules[recommended_rule_type][obj] = self.rules[recommended_rule_type][obj] if self.rules[recommended_rule_type].has_key(obj) else None

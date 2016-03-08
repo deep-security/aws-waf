@@ -3,6 +3,14 @@ class Computer(object):
 		self.manager = manager
 		self.data = host_details
 		self._process_host_detail(host_details)
+		self.application_types = {}
+		self.recommended_rules = {
+			'intrusion_prevention': {},
+			'firewall': {}, 
+			'web_reputation': {},
+			'integrity_monitoring': {},
+			'log_inspection': {},
+		}
 
 	# *****************************************************************
 	# 'Private' methods

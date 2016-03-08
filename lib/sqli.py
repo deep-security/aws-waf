@@ -189,6 +189,8 @@ class Script(core.ScriptContext):
                     if m:
                       sqli_recommendations.append(rule)
                   except Exception, err: pass # @TODO handle this gracefully
+          else:
+            self._log("Instance {} has no rules of type {} applied".format(computer.cloud_object_instance_id, rule_type))
         else:
           self._log("Policy {} is not available for analysis".format(computer.policy_id))
 
