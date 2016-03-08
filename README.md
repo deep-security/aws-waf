@@ -122,6 +122,8 @@ The *iplists* command does not create a WACL or rule on your behalf. It creates 
 
 ### sqli
 
-The *sqli* command designs a set of rules to help complete your AWS WAF deployment. There are charges associated with each rule that the script creates.
+The *sqli* command provides recommendation as to which instances should be protected by an rule with an SQLi match set. Additionally, you can ask the command to create an SQLi match set that covers most web applications.
 
-The script can be run in ```--dryrun``` to see the end result before pushing the rules to AWS. This can help you get a better idea of the cost associated with the new rule set.
+There is no charge for the match set. Charge start when you create a rule using the match set.
+
+The script can be run in ```--dryrun``` to see the end result before pushing the match set to AWS. This can help you get a better idea of what is being created.
