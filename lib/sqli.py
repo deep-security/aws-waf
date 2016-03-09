@@ -49,6 +49,7 @@ def run_script(args):
     script.connect()
     script.get_waf_support_structures()
     script.map_instances_to_wacls()
+    script.print_instances_to_wacls_map()
 
   script.clean_up()
 
@@ -309,8 +310,20 @@ class Script(core.ScriptContext):
     self._log("   Instance\tRecommendation\tSuggested WACL", priority=True)
     for instance_id, recommendation in recommendations.items():
       suggested_wacl = self.instances_to_wacls[instance_id] if self.instances_to_wacls.has_key(instance_id) else ''
-      print "   {}\t{}\t{}".format(instance_id, recommendation, suggested_wacl, priority=True)
+      self._log("   {}\t{}\t{}".format(instance_id, recommendation, suggested_wacl), priority=True)
 
+    self._log("************************************************************************", priority=True)      
+
+  def print_instances_to_wacls_map(self):
+    """
+    Print the instances to WACLs map
+    """
+    self._log("************************************************************************", priority=True)
+    self._log("Discovered mappings of EC2 instance to WACL", priority=True)
+    self._log("   Instance\tSuggested WACL", priority=True)
+    for instance_id, instance in self.instances.items():
+      wacl = self.instances_to_wacls[instance_id] if self.instances_to_wacls.has_key(instance_id) else "---"
+      self._log("   {}\t{}".format(instance_id, wacl), priority=True)
     self._log("************************************************************************", priority=True)      
 
   def create_match_condition(self):
