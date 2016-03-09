@@ -209,12 +209,12 @@ python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-
 The complete command syntax is;
 
 ```
-# ./ds-to-aws-waf.py sqli --help
 usage: ds-to-aws-waf.py sqli [-h] [-d DSM] [--dsm-port DSM_PORT] -u
                              DSM_USERNAME -p DSM_PASSWORD [-t DSM_TENANT]
                              [-r AWS_REGION] [--ignore-ssl-validation]
                              [--dryrun] [--verbose] [-l]
                              [--tag TAGS [TAGS ...]] [--create-match]
+                             [--map-to-wacl]
 
 Create and update AWS WAF WACL rules based on information from a Deep Security
 installation
@@ -253,6 +253,7 @@ optional arguments:
                         Specify the tags to filter the EC2 instances by
   --create-match        Create the SQLi match condition for use in various
                         rules
+  --map-to-wacl         Attempt to map each instance to an AWS WAF WACL
 ```
 
 <a name="ssl-certificate-validation" />
