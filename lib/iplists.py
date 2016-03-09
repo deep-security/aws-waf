@@ -161,6 +161,7 @@ class Script(core.ScriptContext):
     addresses = []
     for address in ds_list.addresses:
       if "#" in address: address = address.split('#').strip() # remove any comments
+      if len(address.strip()) == 0: continue # skip empty lines
       if '-' in address:
         try:
           a1, a2 = address.split('-')
