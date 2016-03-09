@@ -21,6 +21,7 @@ def run_script(args):
   parser.add_argument('--tag', action=core.StoreNameValuePairOnEquals, nargs="+", dest="tags", required=False, help='Specify the tags to filter the EC2 instances by')
 
   parser.add_argument('--create-match', action='store_true', required=False, dest="create_match", help='Create the SQLi match condition for use in various rules')
+  parser.add_argument('--map-to-wacl', action='store_true', required=False, dest="map_to_wacl", help='Attempt to map each instance to an AWS WAF WACL')
   
   script = Script(args[1:], parser)
 
@@ -29,6 +30,8 @@ def run_script(args):
     script.connect()
     script.get_ec2_instances()
     script.get_deep_security_info()
+    script.get_waf_support_structures()
+    script.map_instances_to_wacls()
     recommendations = script.compare_ec2_to_deep_security()
     script.print_recommendations(recommendations)
 
@@ -42,6 +45,11 @@ def run_script(args):
     # create the recommend SQLi match condition
     script.create_match_condition()
 
+  if script.args.map_to_wacl:
+    script.connect()
+    script.get_waf_support_structures()
+    script.map_instances_to_wacls()
+
   script.clean_up()
 
 class Script(core.ScriptContext):
@@ -50,16 +58,21 @@ class Script(core.ScriptContext):
     #super(Script, self).__init__(args, parser)
     self.aws_credentials = None
     self.dsm = None
-    self.ip_lists = []
     self.waf = None
     self.ec2 = None
+    self.elb = None
+    self.cloudfront = None
+    
+    self.ip_lists = []
     self.instances = {}
+    self.elbs = {}
+    self.cloudfront_distributions = {}
+    self.wacls = {}
+    self.instances_to_wacls = {}
     self.tbuids = []
     self.patterns = []
 
     self.aws_credentials = self._get_aws_credentials()
-    self.dsm = None
-    self.waf = None
 
     self.cache_patterns()
 
@@ -70,6 +83,8 @@ class Script(core.ScriptContext):
     self.dsm = self._connect_to_deep_security()
     self.waf = self._connect_to_aws_waf()
     self.ec2 = self._connect_to_aws_ec2()
+    self.elb = self._connect_to_aws_elb()
+    self.cloudfront = self._connect_to_aws_cloudfront()
 
   def cache_patterns(self):
     """
@@ -114,6 +129,67 @@ class Script(core.ScriptContext):
         if reservation.has_key('Instances'):
           for instance in reservation['Instances']:
             self.instances[instance['InstanceId']] = instance
+
+  def get_elbs(self):
+    """
+    Get all of the ELBs active in the current region
+    """
+    if self.elb:
+      response = self.elb.describe_load_balancers(PageSize=400)
+      if response and response.has_key('LoadBalancerDescriptions'):
+        for elb in response['LoadBalancerDescriptions']:
+          self.elbs[elb['LoadBalancerName']] = elb
+
+  def get_cloudfront_distributions(self):
+    """
+    Get all of the CloudFront distributions
+    """
+    if self.cloudfront:
+      response = self.cloudfront.list_distributions(MaxItems='100')
+      if response and response.has_key('DistributionList') and response['DistributionList'].has_key('Items'):
+        for distribution in response['DistributionList']['Items']:
+          self.cloudfront_distributions[distribution['Id']] = distribution
+
+  def get_wacls(self):
+    """
+    Get all of the AWS WAF WACLs
+    """
+    if self.waf:
+      response = self.waf.list_web_acls(Limit=100)
+      if response and response.has_key('WebACLs'):
+        for wacl in response['WebACLs']:
+          self.wacls[wacl['WebACLId']] = wacl
+
+  def get_waf_support_structures(self):
+    """
+    Get all of the AWS object information for supporting
+    AWS WAF WACLs
+    """
+    self.get_ec2_instances()
+    self.get_elbs()
+    self.get_cloudfront_distributions()
+    self.get_wacls()
+
+  def map_instances_to_wacls(self):
+    """
+    For each EC2 instance, attempt to map it to an AWS WAF WACL
+    """
+    self._log("Attempting to map each EC2 instance to an AWS WAF WACL")
+    for instance_id, instance in self.instances.items():
+      self._log("Mapping instance [{}]".format(instance_id))
+      # is this instance connected to an ELB?
+      for elb_id, elb in self.elbs.items():
+        for registered_instance in elb['Instances']:
+          if registered_instance['InstanceId'] == instance_id:
+            self._log("Instance [{}] is registered to ELB [{}]".format(instance_id, elb_id))
+            registered_origin_id_prefix = 'elb-{}'.format(elb_id.lower())
+            for distro_id, distro in self.cloudfront_distributions.items():
+              for origin in distro['Origins']['Items']:
+                if origin['Id'].lower().startswith(registered_origin_id_prefix):
+                  self._log('ELB [{}] is a registered origin for CloudFront Distribution [{}]'.format(elb_id, distro_id))
+                  if self.wacls.has_key(distro['WebACLId']):
+                    self._log('CloudFront Distribution [{}] is protected by WebACL [{}]'.format(distro_id, distro['WebACLId']))
+                    self.instances_to_wacls[instance_id] = distro['WebACLId']
 
   def get_deep_security_info(self):
     """
@@ -230,9 +306,10 @@ class Script(core.ScriptContext):
     """
     self._log("************************************************************************", priority=True)
     self._log("Completed recommendation phase", priority=True)
-    self._log("   Instance\tRecommendation", priority=True)
+    self._log("   Instance\tRecommendation\tSuggested WACL", priority=True)
     for instance_id, recommendation in recommendations.items():
-      print "   {}\t{}".format(instance_id, recommendation, priority=True)
+      suggested_wacl = self.instances_to_wacls[instance_id] if self.instances_to_wacls.has_key(instance_id) else ''
+      print "   {}\t{}\t{}".format(instance_id, recommendation, suggested_wacl, priority=True)
 
     self._log("************************************************************************", priority=True)      
 
