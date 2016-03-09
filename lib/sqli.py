@@ -22,6 +22,7 @@ def run_script(args):
 
   parser.add_argument('--create-match', action='store_true', required=False, dest="create_match", help='Create the SQLi match condition for use in various rules')
   parser.add_argument('--map-to-wacl', action='store_true', required=False, dest="map_to_wacl", help='Attempt to map each instance to an AWS WAF WACL')
+  parser.add_argument('--create-rule', action='store_true', required=False, dest="create_rule", help='Create the SQLi rule for instances that can be mapped to an AWS WAF WACL. Used in conjunction with -l/--list')
   
   script = Script(args[1:], parser)
 
@@ -34,6 +35,8 @@ def run_script(args):
     script.map_instances_to_wacls()
     recommendations = script.compare_ec2_to_deep_security()
     script.print_recommendations(recommendations)
+    if script.args.create_rule:
+      pass
 
   if script.args.create_match:
     script.connect()
@@ -50,6 +53,9 @@ def run_script(args):
     script.get_waf_support_structures()
     script.map_instances_to_wacls()
     script.print_instances_to_wacls_map()
+
+  if script.args.create_rule and not script.args.list:
+    self._log("The --create-rule switch must be used with the -l/--list switch", priority=True)
 
   script.clean_up()
 
