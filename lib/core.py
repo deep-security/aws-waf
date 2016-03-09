@@ -167,46 +167,30 @@ class ScriptContext():
 
     return dsm 
 
-  def _connect_to_aws_waf(self):
+  def _connect_to_aws_service(self, service_name):
     """
-    Connect to AWS WAF via explicit credentials (shared by the AWS CLI)
-    or an instance role
+    Connect to the specified AWS service via explicit credentials
+    (shared by the AWS CLI) or an instance role
     """
-    waf = None
+    service = None
     try:
       aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'])
-      waf = aws.client('waf') 
-      self._log("Connected to AWS WAF")
+      service = aws.client(service_name) 
+      self._log("Connected to AWS {}".format(service_name))
     except Exception, err: 
-      self._log("Could not connect to AWS WAF using local CLI credentials", err=err)
+      self._log("Could not connect to AWS {} using local CLI credentials".format(service_name), err=err)
       try:
-        waf = boto3.client('waf')
-        self._log("Connected to AWS WAF")
+        service = boto3.client(service_name)
+        self._log("Connected to AWS {}".format(service_name))
       except Exception, err:
-        self._log("Could not connect to AWS WAF using an instance role", err=err)  
+        self._log("Could not connect to AWS {} using an instance role".format(service_name), err=err)  
 
-    return waf
+    return service
 
-  def _connect_to_aws_ec2(self):
-    """
-    Connect to AWS EC2 via explicit credentials (shared by the AWS CLI)
-    or an instance role
-    """
-    ec2 = None
-    try:
-      aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'], region_name=self.args.aws_region)
-      ec2 = aws.client('ec2') 
-      self._log("Connected to AWS EC2")
-    except Exception, err: 
-      self._log("Could not connect to AWS EC2 using local CLI credentials", err=err)
-      try:
-        aws = boto3.session.Session(region_name=self.args.aws_region)
-        ec2 = aws.client('ec2') 
-        self._log("Connected to AWS EC2")
-      except Exception, err:
-        self._log("Could not connect to AWS EC2 using an instance role", err=err)  
-
-    return ec2    
+  def _connect_to_aws_waf(self): return self._connect_to_aws_service('waf')
+  def _connect_to_aws_ec2(self): return self._connect_to_aws_service('ec2')
+  def _connect_to_aws_elb(self): return self._connect_to_aws_service('elb')
+  def _connect_to_aws_cloudfront(self): return self._connect_to_aws_service('cloudfront')
 
   def get_available_aws_sets(self):
     """
