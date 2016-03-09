@@ -36,6 +36,11 @@ def run_script(args):
     recommendations = script.compare_ec2_to_deep_security()
     script.print_recommendations(recommendations)
     if script.args.create_rule:
+      if script.args.dryrun:
+        script._log("***********************************************************************", priority=True)
+        script._log("* DRY RUN ENABLED. NO CHANGES WILL BE MADE", priority=True)
+        script._log("***********************************************************************", priority=True)
+      
       pass
 
   if script.args.create_match:

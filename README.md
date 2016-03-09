@@ -254,6 +254,8 @@ optional arguments:
   --create-match        Create the SQLi match condition for use in various
                         rules
   --map-to-wacl         Attempt to map each instance to an AWS WAF WACL
+  --create-rule         Create the SQLi rule for instances that can be mapped
+                        to an AWS WAF WACL. Used in conjunction with -l/--list
 ```
 
 <a name="ssl-certificate-validation" />
