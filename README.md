@@ -123,7 +123,7 @@ python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-
 The complete command syntax is;
 
 ```
- # ./ds-to-aws-waf.py iplist --help
+ # ./ds-to-aws-waf.py iplists --help
 usage: ds-to-aws-waf.py iplists [-h] [-d DSM] [--dsm-port DSM_PORT] -u
                                 DSM_USERNAME -p DSM_PASSWORD [-t DSM_TENANT]
                                 [-r AWS_REGION] [--ignore-ssl-validation]
@@ -181,10 +181,10 @@ Common usage;
 ```
 # create a new SQLi match condition 
 # ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT --create-match
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT --create-match
 
 # ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation --create-match
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation --create-match
 ```
 
 To find out which instances should be protected by an AWS WAF SQLi rule;
@@ -192,17 +192,17 @@ To find out which instances should be protected by an AWS WAF SQLi rule;
 ```
 # find out which instances should be protected by an AWS WAF SQLi rule
 # ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT -l
 
 # ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
 
 # filter those instances by tag and region
 # ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l --tag Name=Test --tag Environment=PROD -r us-east-1
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT -l --tag Name=Test --tag Environment=PROD -r us-east-1
 
 # ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l --tag Name=Test --tag Environment=PROD -r us-east-1
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l --tag Name=Test --tag Environment=PROD -r us-east-1
 
 ```
 
@@ -254,6 +254,8 @@ optional arguments:
   --create-match        Create the SQLi match condition for use in various
                         rules
   --map-to-wacl         Attempt to map each instance to an AWS WAF WACL
+  --create-rule         Create the SQLi rule for instances that can be mapped
+                        to an AWS WAF WACL. Used in conjunction with -l/--list
 ```
 
 <a name="ssl-certificate-validation" />
@@ -316,5 +318,9 @@ The *iplists* command does not create a WACL or rule on your behalf. It creates 
 The *sqli* command provides recommendation as to which instances should be protected by an rule with an SQLi match set. Additionally, you can ask the command to create an SQLi match set that covers most web applications.
 
 There is no charge for the match set. Charge start when you create a rule using the match set.
+
+If you run the script with the ```--create-rule``` option, the script will create an AWS WAF Rule is it can determine which WACL is protecting the instances the recommendation is based on. 
+
+With this option enabled, you will start to incur charges from AWS for as long as the rule is associated with a WACL. Please refer to the [AWS WAF Pricing](http://aws.amazon.com/waf/pricing/) page for the latest information.
 
 The script can be run in ```--dryrun``` to see the end result before pushing the match set to AWS. This can help you get a better idea of what is being created.
