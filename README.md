@@ -123,7 +123,7 @@ python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-
 The complete command syntax is;
 
 ```
- # ./ds-to-aws-waf.py iplist --help
+ # ./ds-to-aws-waf.py iplists --help
 usage: ds-to-aws-waf.py iplists [-h] [-d DSM] [--dsm-port DSM_PORT] -u
                                 DSM_USERNAME -p DSM_PASSWORD [-t DSM_TENANT]
                                 [-r AWS_REGION] [--ignore-ssl-validation]
@@ -181,10 +181,10 @@ Common usage;
 ```
 # create a new SQLi match condition 
 # ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT --create-match
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT --create-match
 
 # ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation --create-match
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation --create-match
 ```
 
 To find out which instances should be protected by an AWS WAF SQLi rule;
@@ -192,17 +192,17 @@ To find out which instances should be protected by an AWS WAF SQLi rule;
 ```
 # find out which instances should be protected by an AWS WAF SQLi rule
 # ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT -l
 
 # ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
 
 # filter those instances by tag and region
 # ...for Deep Security as a Service
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -t TENANT -l --tag Name=Test --tag Environment=PROD -r us-east-1
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT -l --tag Name=Test --tag Environment=PROD -r us-east-1
 
 # ...for another Deep Security manager
-python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l --tag Name=Test --tag Environment=PROD -r us-east-1
+python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l --tag Name=Test --tag Environment=PROD -r us-east-1
 
 ```
 
