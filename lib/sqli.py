@@ -110,9 +110,9 @@ class Script(core.ScriptContext):
     """
     Get a list of EC2 instances from AWS
     """
+    filters = None
     if self.ec2:
       # build any filters first
-      filters = None
       if self.args.tags:
         filters = []
         for k, v in self.args.tags.items():
