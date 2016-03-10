@@ -415,6 +415,7 @@ class Script(core.ScriptContext):
         self._log("   SQLi match set will contain;", priority=True)
         for update in sqli_match_set_updates:
           self._log("      {}".format(update), priority=True)
+<<<<<<< HEAD
 
   def get_match_condition(self):
     """
@@ -546,3 +547,5 @@ class Script(core.ScriptContext):
       else:
         self._log("Would have updated WACL [{}]".format(wacl_id), priority=True)
         self._log("   With updates: {}".format(wacl_updates))
+=======
+>>>>>>> 68e192bd626611b1bd0d74fbd0f41df46cf5781f
