@@ -319,12 +319,8 @@ The *sqli* command provides recommendation as to which instances should be prote
 
 There is no charge for the match set. Charge start when you create a rule using the match set.
 
-<<<<<<< HEAD
 If you run the script with the ```--create-rule``` option, the script will create an AWS WAF Rule is it can determine which WACL is protecting the instances the recommendation is based on. 
 
 With this option enabled, you will start to incur charges from AWS for as long as the rule is associated with a WACL. Please refer to the [AWS WAF Pricing](http://aws.amazon.com/waf/pricing/) page for the latest information.
 
 The script can be run in ```--dryrun``` to see the end result before pushing the match set to AWS. This can help you get a better idea of what is being created.
-=======
-The script can be run in ```--dryrun``` to see the end result before pushing the match set to AWS. This can help you get a better idea of what is being created.
->>>>>>> 68e192bd626611b1bd0d74fbd0f41df46cf5781f
