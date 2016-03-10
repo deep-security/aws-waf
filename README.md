@@ -250,7 +250,7 @@ optional arguments:
                         debugging
   -l, --list            List the available EC2 instances
   --tag TAGS [TAGS ...]
-                        Specify the tags to filter the EC2 instances by
+                        Specify the tags to filter the EC2 instances by. Multiple tags are cumulative
   --create-match        Create the SQLi match condition for use in various
                         rules
   --map-to-wacl         Attempt to map each instance to an AWS WAF WACL

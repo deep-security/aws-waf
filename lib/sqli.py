@@ -18,7 +18,7 @@ def run_script(args):
   # configure the command line args
   parser = core.get_arg_parser(prog='ds-to-aws-waf.py sqli', add_help=True)
   parser.add_argument('-l', '--list', action='store_true', required=False, help='List the available EC2 instances')
-  parser.add_argument('--tag', action=core.StoreNameValuePairOnEquals, nargs="+", dest="tags", required=False, help='Specify the tags to filter the EC2 instances by')
+  parser.add_argument('--tag', action=core.StoreNameValuePairOnEquals, nargs="+", dest="tags", required=False, help='Specify the tags to filter the EC2 instances by. Multiple tags are cumulative')
 
   parser.add_argument('--create-match', action='store_true', required=False, dest="create_match", help='Create the SQLi match condition for use in various rules')
   parser.add_argument('--map-to-wacl', action='store_true', required=False, dest="map_to_wacl", help='Attempt to map each instance to an AWS WAF WACL')
