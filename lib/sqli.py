@@ -41,7 +41,15 @@ def run_script(args):
         script._log("* DRY RUN ENABLED. NO CHANGES WILL BE MADE", priority=True)
         script._log("***********************************************************************", priority=True)
       
-      pass
+      # create the rule and update the WACLs 
+      # --dryrun is handled directly in the functions
+      rule_created = False
+      for instance_id, wacl_id in script.instances_to_wacls.items():
+        if not rule_created:
+          script.create_wacl_rule() # idempotent
+          rule_created = True
+
+        script.update_wacl(wacl_id)
 
   if script.args.create_match:
     script.connect()
@@ -60,7 +68,7 @@ def run_script(args):
     script.print_instances_to_wacls_map()
 
   if script.args.create_rule and not script.args.list:
-    self._log("The --create-rule switch must be used with the -l/--list switch", priority=True)
+    script._log("The --create-rule switch must be used with the -l/--list switch", priority=True)
 
   script.clean_up()
 
@@ -74,6 +82,9 @@ class Script(core.ScriptContext):
     self.ec2 = None
     self.elb = None
     self.cloudfront = None
+
+    self.MATCH_SET_NAME = "Deep Security SQLi Guidance"
+    self.RULE_NAME = "Deep Security Block SQLi"
     
     self.ip_lists = []
     self.instances = {}
@@ -121,9 +132,9 @@ class Script(core.ScriptContext):
     """
     Get a list of EC2 instances from AWS
     """
+    filters = None
     if self.ec2:
       # build any filters first
-      filters = None
       if self.args.tags:
         filters = []
         for k, v in self.args.tags.items():
@@ -343,21 +354,19 @@ class Script(core.ScriptContext):
 
     Reference for SQLi match sets is available at http://docs.aws.amazon.com/waf/latest/developerguide/web-acl-sql-conditions.html
     """
-    MATCH_SET_NAME = "Deep Security SQLi Guidance"
-
     # does the match set already exist?
     exists = False
     response = self.waf.list_sql_injection_match_sets(Limit=100)
     if response and response.has_key('SqlInjectionMatchSets'):
       for match_set in response['SqlInjectionMatchSets']:
-        if match_set['Name'] == MATCH_SET_NAME:
+        if match_set['Name'] == self.MATCH_SET_NAME:
           exists = True
           break
 
     if exists:
       self._log("Desired SQLi match set already exists. No action needed")
     else:
-      self._log("Attempting to create a new SQLi match set; {}".format(MATCH_SET_NAME))
+      self._log("Attempting to create a new SQLi match set; {}".format(self.MATCH_SET_NAME))
       sqli_match_set_updates = [
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'URI', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
@@ -375,10 +384,10 @@ class Script(core.ScriptContext):
           match_set_id = None
           try:
             response = self.waf.create_sql_injection_match_set(
-              Name=MATCH_SET_NAME,
+              Name=self.MATCH_SET_NAME,
               ChangeToken=change_token
               )
-            self._log("Created a new SQLi match set: {}".format(MATCH_SET_NAME))
+            self._log("Created a new SQLi match set: {}".format(self.MATCH_SET_NAME))
 
             if response and response.has_key('SqlInjectionMatchSet') and response['SqlInjectionMatchSet'].has_key('SqlInjectionMatchSetId'):
               match_set_id = response['SqlInjectionMatchSet']['SqlInjectionMatchSetId']
@@ -398,7 +407,7 @@ class Script(core.ScriptContext):
                   ChangeToken=change_token,
                   Updates=sqli_match_set_updates
                   )
-                self._log("Updated SQLi match set; {}".format(MATCH_SET_NAME), priority=True)
+                self._log("Updated SQLi match set; {}".format(self.MATCH_SET_NAME), priority=True)
               except Exception, err:
                 self._log("Unable to update SQLi match set", err=err)
       else:
@@ -406,3 +415,134 @@ class Script(core.ScriptContext):
         self._log("   SQLi match set will contain;", priority=True)
         for update in sqli_match_set_updates:
           self._log("      {}".format(update), priority=True)
+
+  def get_match_condition(self):
+    """
+    Get the ID of the Deep Security SQLi match condition
+    """
+    result = None
+
+    match_set_id = None
+    response = self.waf.list_sql_injection_match_sets(Limit=100)
+    if response and response.has_key('SqlInjectionMatchSets'):
+      for match_set in response['SqlInjectionMatchSets']:
+        if match_set['Name'] == self.MATCH_SET_NAME:
+          match_set_id = match_set['SqlInjectionMatchSetId']
+
+    if match_set_id:
+      try:
+        response = self.waf.get_sql_injection_match_set(SqlInjectionMatchSetId=match_set_id)
+        if response and response.has_key('SqlInjectionMatchSet'):
+          result = response['SqlInjectionMatchSet']['SqlInjectionMatchSetId']
+      except Exception, err: pass
+
+    return result
+
+  def get_rule(self):
+    """
+    Get the ID of the Deep Security SQLi rule
+    """
+    result = None
+
+    rule_id = None
+    response = self.waf.list_rules(Limit=100)
+    if response and response.has_key('Rules'):
+      for rule in response['Rules']:
+        if rule['Name'] == self.RULE_NAME:
+          rule_id = rule['RuleId']
+
+    if rule_id:
+      try:
+        response = self.waf.get_rule(RuleId=rule_id)
+        if response and response.has_key('Rule'):
+          result = response['Rule']['RuleId']
+      except Exception, err: pass
+
+    return result
+
+  def create_wacl_rule(self):
+    """
+    Create the SQLi rule for the specified WACL
+    """
+    # make sure the SQLi match condition exists
+    self.create_match_condition() # self.args.dryrun is handled in the function
+    match_set_id = self.get_match_condition()
+
+    sqli_rule_updates = [
+        { 'Action': 'INSERT', 'Predicate': {
+              'Negated': True,
+              'Type': 'SqlInjectionMatch',
+              'DataId': match_set_id,
+            }
+          }
+      ]
+
+    if match_set_id:
+      if not self.args.dryrun and not self.get_rule():
+        # get a change token
+        change_token = self._get_aws_waf_change_token()
+        if change_token:
+          response = self.waf.create_rule(
+              Name=self.RULE_NAME,
+              MetricName='DsSqliBlocks',
+              ChangeToken=change_token
+            )
+
+          rule_id = None
+          if response and response.has_key('Rule'):
+            rule_id = response['Rule']['RuleId']
+
+          if rule_id:
+            # get a change token
+            change_token = self._get_aws_waf_change_token()
+            if change_token:
+              response = self.waf.update_rule(
+                  RuleId=rule_id,
+                  ChangeToken=change_token, 
+                  Updates=sqli_rule_updates,
+                )
+
+              if response and response.has_key('ChangeToken'):
+                self._log("Successfully created rule []".format(self.RULE_NAME), priority=True)
+                self._log("   With predicates: {}".format(sqli_rule_updates))
+              else:
+                self._log("Failed to create rule []".format(self.RULE_NAME))
+      else:
+        self._log("Would create rule []".format(self.RULE_NAME))
+        self._log("   With predicates: {}".format(sqli_rule_updates))
+
+  def update_wacl(self, wacl_id):
+    """
+    Update the specified WACL with the Deep Security SQLi rule
+    """
+
+    wacl_updates = [
+        { 
+          'Action': 'INSERT', 'ActivatedRule': {
+              'Priority': 100,
+              'RuleId': self.get_rule(),
+              'Action': { 'Type': 'BLOCK' },
+            }
+          }
+      ]
+
+    if not self.args.dryrun:
+      if self.get_rule(): # rule exists, continue
+        # get a change token
+        change_token = self._get_aws_waf_change_token()
+
+        if change_token:
+          response = self.waf.update_web_acl(
+              WebACLId=wacl_id,
+              ChangeToken=change_token,
+              Updates=wacl_updates,
+              DefaultAction={ 'Type': 'BLOCK' },
+            )
+          if response and response.has_key('ChangeToken'):
+            self._log("Successfully updated WACL [{}]".format(wacl_id), priority=True)
+            self._log("   With updates: {}".format(wacl_updates))
+          else:
+            self._log("Unable to update WACL [{}]".format(wacl_id), priority=True)
+      else:
+        self._log("Would have updated WACL [{}]".format(wacl_id), priority=True)
+        self._log("   With updates: {}".format(wacl_updates))
