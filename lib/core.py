@@ -174,7 +174,7 @@ class ScriptContext():
     """
     service = None
     try:
-      aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'])
+      aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'], region_name=self.args.aws_region)
       service = aws.client(service_name) 
       self._log("Connected to AWS {}".format(service_name))
     except Exception, err: 
