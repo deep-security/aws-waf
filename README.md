@@ -63,6 +63,14 @@ Each script in this set works under a common structure. There are several shared
                         access
   -t DSM_TENANT, --dsm-tenant DSM_TENANT
                         The name of the Deep Security tenant/account
+  -a AWS_ACCESS_KEY, --aws-access-key AWS_ACCESS_KEY
+                        The access key for an IAM identity in the AWS account
+                        to connect to
+  -s AWS_SECRET_KEY, --aws-secret-key AWS_SECRET_KEY
+                        The secret key for an IAM identity in the AWS account
+                        to connect to
+  -r AWS_REGION, --aws-region AWS_REGION
+                        The name of AWS region to connect to                        
   --ignore-ssl-validation
                         Ignore SSL certification validation. Be careful when
                         you use this as it disables a recommended security
@@ -150,6 +158,12 @@ optional arguments:
                         access
   -t DSM_TENANT, --dsm-tenant DSM_TENANT
                         The name of the Deep Security tenant/account
+  -a AWS_ACCESS_KEY, --aws-access-key AWS_ACCESS_KEY
+                        The access key for an IAM identity in the AWS account
+                        to connect to
+  -s AWS_SECRET_KEY, --aws-secret-key AWS_SECRET_KEY
+                        The secret key for an IAM identity in the AWS account
+                        to connect to                        
   -r AWS_REGION, --aws-region AWS_REGION
                         The name of AWS region to connect to
   --ignore-ssl-validation
@@ -237,6 +251,12 @@ optional arguments:
                         access
   -t DSM_TENANT, --dsm-tenant DSM_TENANT
                         The name of the Deep Security tenant/account
+  -a AWS_ACCESS_KEY, --aws-access-key AWS_ACCESS_KEY
+                        The access key for an IAM identity in the AWS account
+                        to connect to
+  -s AWS_SECRET_KEY, --aws-secret-key AWS_SECRET_KEY
+                        The secret key for an IAM identity in the AWS account
+                        to connect to                        
   -r AWS_REGION, --aws-region AWS_REGION
                         The name of AWS region to connect to
   --ignore-ssl-validation

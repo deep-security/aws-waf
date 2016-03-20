@@ -29,6 +29,8 @@ def get_arg_parser(prog='ds-to-aws-waf.py', description=None, add_help=False):
   parser.add_argument('-t', '--dsm-tenant', action='store', dest='dsm_tenant', required=False, default=None, help='The name of the Deep Security tenant/account')
 
   # AWS arguments
+  parser.add_argument('-a', '--aws-access-key', action='store', dest='aws_access_key', required=False, help='The access key for an IAM identity in the AWS account to connect to')
+  parser.add_argument('-s', '--aws-secret-key', action='store', dest='aws_secret_key', required=False, help='The secret key for an IAM identity in the AWS account to connect to')
   parser.add_argument('-r', '--aws-region', action='store', dest='aws_region', required=False, default='us-east-1', help='The name of AWS region to connect to')
 
   # general structure arguments
@@ -121,17 +123,27 @@ class ScriptContext():
     """
     credentials = None
 
-    # check locally for an AWS CLI installation
-    aws_credentials_path = [ '{}/.aws/credentials'.format(os.environ['HOME']), "{}\.aws\credentials".format(os.environ['HOME']) ]
-    for path in aws_credentials_path:
-      if os.path.exists(path) and not credentials:
-        self._log("Reading AWS credentials from {}".format(path))
-        with open(path) as fh:
-          for line in fh:
-            if line.startswith('aws_access_key_id'):
-              credentials = { 'aws_access_key_id': line.split('=')[-1].strip() }
-            elif line.startswith('aws_secret_access_key'):
-              credentials['aws_secret_access_key'] = line.split('=')[-1].strip()
+    # were credentials directly passed?
+    if (self.args.aws_access_key and not self.args.aws_secret_key) or (self.args.aws_secret_key and not self.args.aws_access_key):
+      self._log("When specifying AWS credentials via command line arguments both an access key and a secret key are required", priority=True)
+    elif self.args.aws_access_key and self.args.aws_secret_key:
+      self._log("Using AWS credentials specified via command line arguments")
+      credentials = {
+        'aws_access_key_id': self.args.aws_access_key,
+        'aws_secret_access_key': self.args.aws_secret_key,
+        }
+    else:
+      # check locally for an AWS CLI installation
+      aws_credentials_path = [ '{}/.aws/credentials'.format(os.environ['HOME']), "{}\.aws\credentials".format(os.environ['HOME']) ]
+      for path in aws_credentials_path:
+        if os.path.exists(path) and not credentials:
+          self._log("Reading AWS credentials from {}".format(path))
+          with open(path) as fh:
+            for line in fh:
+              if line.startswith('aws_access_key_id'):
+                credentials = { 'aws_access_key_id': line.split('=')[-1].strip() }
+              elif line.startswith('aws_secret_access_key'):
+                credentials['aws_secret_access_key'] = line.split('=')[-1].strip()
 
     return credentials
 
