@@ -147,6 +147,22 @@ class ScriptContext():
 
     return credentials
 
+  def _get_aws_region_from_config(self):
+    """
+    Get the default region from a pre-configured AWS CLI installation 
+    """
+    region = None
+    aws_config_path = [ '{}/.aws/config'.format(os.environ['HOME']), "{}\.aws\config".format(os.environ['HOME']) ]
+    for path in aws_config_path:
+      if os.path.exists(path):
+        self._log("Reading AWS config from {}".format(path))
+        with open(path) as fh:
+          for line in fh:
+            if line.startswith('region'):
+              region = line.split('=')[-1].strip()
+
+    return region
+
   def _connect_to_deep_security(self):
     dsm = None
     if self.args.ignore_ssl_validation:
@@ -185,8 +201,12 @@ class ScriptContext():
     (shared by the AWS CLI) or an instance role
     """
     service = None
+
+    region = self.args.aws_region # prefer explicit region vs. CLI config
+    if not region: region = self._get_aws_region_from_config()
+
     try:
-      aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'], region_name=self.args.aws_region)
+      aws = boto3.session.Session(aws_access_key_id=self.aws_credentials['aws_access_key_id'], aws_secret_access_key=self.aws_credentials['aws_secret_access_key'], region_name=region)
       service = aws.client(service_name) 
       self._log("Connected to AWS {}".format(service_name))
     except Exception, err: 
