@@ -2,7 +2,7 @@
 
 # Deep Security AWS WAF Integration
 
-A simple tool set to help build AWS WAF rule sets from Deep Security. 
+A simple tool set to help build AWS WAF rule sets based on intelligence from Deep Security. 
 
 ## Index
 
