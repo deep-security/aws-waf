@@ -12,7 +12,6 @@ import netaddr
 
 # Project libraries
 import core
-import deepsecurity.manager
 
 def run_script(args):
   # configure the command line args
