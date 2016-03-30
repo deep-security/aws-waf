@@ -192,7 +192,7 @@ class ComputerGroups(core.CoreDict):
 class Computer(core.CoreObject):
   def __init__(self, manager=None, api_response=None, log_func=None):
     self.manager = manager
-    self.recommened_rules = None
+    self.recommended_rules = None
     if api_response: self._set_properties(api_response, log_func)
 
   def send_events(self):
@@ -235,8 +235,8 @@ class Computer(core.CoreObject):
     """
     Recommend a set of rules to apply to the computer
     """
-    self.recommened_rules = self.manager.get_rule_recommendations_for_computer(self.id)
-    return self.recommened_rules['total_recommedations']
+    self.recommended_rules = self.manager.get_rule_recommendations_for_computer(self.id)
+    return self.recommended_rules['total_recommedations']
 
 class ComputerGroup(core.CoreObject):
   def __init__(self, manager=None, api_response=None, log_func=None):

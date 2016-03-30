@@ -256,8 +256,9 @@ class CoreApi(object):
           if result['raw']:
             result['data'] = json.loads(result['raw'])
         except Exception, json_err:
-          self.log("Could not convert response from call {} to JSON".format(request['call']), err=json_err)
-
+          # report the exception as 'info' because it's not fatal and the data is 
+          # still captured in result['raw']
+          self.log("Could not convert response from call {} to JSON. Threw exception:\n\t{}".format(request['call'], json_err), level='info')
     return result
 
   def _prefix_keys(self, prefix, d):

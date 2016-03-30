@@ -357,6 +357,7 @@ class Manager(core.CoreApi):
       if response and response['status'] == 200:
         # response contains the internal rule ID
         for internal_rule_id in response['data']:
+          if internal_rule_id == u'@xmlns': continue
           results[rule_key].append(internal_rule_id)
           results['total_recommedations'] += 1
 
