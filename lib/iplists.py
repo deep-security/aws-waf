@@ -10,7 +10,6 @@ import netaddr
 
 # project libraries
 import core
-import deepsecurity.manager
 
 def run_script(args):
   # configure the command line args
@@ -71,7 +70,7 @@ class Script(core.ScriptContext):
     ip_lists = None
 
     if self.dsm:
-      self.dsm.get_ip_lists()
+      self.dsm.ip_lists.get()
       ip_lists = self.dsm.ip_lists
       self._log("Cached the available IP Lists from Deep Security")
 

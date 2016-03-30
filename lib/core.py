@@ -8,7 +8,7 @@ import boto3
 import boto3.session
 
 # project libraries
-import deepsecurity
+import lib.deepsecurity as deepsecurity
 
 def get_arg_parser(prog='ds-to-aws-waf.py', description=None, add_help=False):
   """
@@ -183,15 +183,17 @@ class ScriptContext():
     try:
       dsm_port = self.args.dsm_port if not self.args.dsm == 'app.deepsecurity.trendmicro.com' else 443
       self._log("Attempting to connect to Deep Security at {}:{}".format(self.args.dsm, dsm_port))
-      dsm = deepsecurity.manager.Manager(dsm_hostname=self.args.dsm, dsm_port=dsm_port, username=self.args.dsm_username, password=self.args.dsm_password, tenant=self.args.dsm_tenant, ignore_ssl_validation=self.args.ignore_ssl_validation) 
-      self._log("Connected to the Deep Security Manager at {}".format(self.args.dsm))
+      dsm = deepsecurity.dsm.Manager(hostname=self.args.dsm, port=dsm_port, username=self.args.dsm_username, password=self.args.dsm_password, tenant=self.args.dsm_tenant, ignore_ssl_validation=self.args.ignore_ssl_validation) 
+      dsm.sign_in()
     except Exception, err: 
       self._log("Could not connect to the Deep Security", err=err)
 
-    if not dsm.session_id_rest and not dsm.session_id_soap:
+    if not dsm._sessions['REST'] and not dsm._sessions['SOAP']:
       self._log("Unable to connect to the Deep Security Manager. Please check your settings")
       if not self.args.ignore_ssl_validation:
         self._log("You did not ask to ignore SSL certification validation. This is a common error when connect to a Deep Security Manager that was installed via software or the AWS Marketplace. Please set the flag (--ignore-ssl-validation), check your other settings, and try again")
+    else:
+      self._log("Connected to the Deep Security Manager at {}".format(self.args.dsm))
 
     return dsm 
 

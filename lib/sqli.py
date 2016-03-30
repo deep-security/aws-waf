@@ -12,7 +12,6 @@ import netaddr
 
 # Project libraries
 import core
-import deepsecurity.manager
 
 def run_script(args):
   # configure the command line args
@@ -221,11 +220,12 @@ class Script(core.ScriptContext):
     """
     self._log("Requesting information from Deep Security about your deployment", priority=True)
     if self.dsm:
-      self.dsm.get_all()
+      self.dsm.policies.get()
+      self.dsm.computer_groups.get()
       self._log("Requesting rules from the Deep Security manager. This will take a few seconds...")
-      self.dsm.get_all_rules()
+      self.dsm.rules.get()
       self._log("Requesting computers from the Deep Security manager. This will take a few seconds...")
-      self.dsm.get_computers_with_details()
+      self.dsm.computers.get()
       self._log("Requested information from the Deep Security manager cached locally")
 
   def compare_ec2_to_deep_security(self):
@@ -237,7 +237,7 @@ class Script(core.ScriptContext):
     recommendations = {}
     if self.dsm and self.dsm.computers and self.instances:
       for computer_id, computer_details in self.dsm.computers.items():
-        ds_instance_map[computer_details.cloud_object_instance_id] = computer_id
+        ds_instance_map[computer_details.cloud_instance_id] = computer_id
 
     for instance_id, instance_details in self.instances.items():
       if ds_instance_map.has_key(instance_id):
@@ -259,8 +259,8 @@ class Script(core.ScriptContext):
       sqli_recommended = True
 
     if 'application_type_id' in dir(rule):
-      if self.dsm.application_types.has_key(rule.application_type_id):
-        if self.dsm.application_types[rule.application_type_id].tbuid in self.tbuids:
+      if self.dsm.rules['application_types'].has_key(rule.application_type_id):
+        if self.dsm.rules['application_types'][rule.application_type_id].tbuid in self.tbuids:
           sqli_recommended = True
 
     for pattern in self.patterns:
@@ -279,43 +279,46 @@ class Script(core.ScriptContext):
     Analyze the specified computer to determine if it should be 
     protected by SQLi rules
     """
-    self._log("Analyzing computer {}:{}".format(ds_computer_id, self.dsm.computers[ds_computer_id].hostname))
+    self._log("Analyzing computer {}:{}".format(ds_computer_id, self.dsm.computers[ds_computer_id].name))
     recommendation = False
-    self.dsm.get_recommended_rules_for_computer(ds_computer_id)
+    self.dsm.get_rule_recommendations_for_computer(ds_computer_id)
     computer = self.dsm.computers[ds_computer_id]
     sqli_recommendations = []
-      
-    # check at the policy level
-    if computer.policy_id:
-      self._log("Computer is protected by Deep Security. Checking rules")
-      for rule_type in [
-        'integrity_monitoring_rules',
-        'log_inspection_rules',
-        'intrusion_prevention_rules'
-        ]:
-        if self.dsm.policies.has_key(computer.policy_id):
-          rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
-          if rule_set: # policy has these type of rules applied
-            for rule_id in getattr(self.dsm.policies[computer.policy_id], rule_type)[-1]:
-              rule = self.dsm.rules[rule_type.replace('_rules', '')][rule_id]
-              if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
-          else:
-            self._log("Instance {} has no rules of type {} applied".format(computer.cloud_object_instance_id, rule_type))
-        else:
-          self._log("Policy {} is not available for analysis".format(computer.policy_id))
-    else:
-      self._log("Deep Security is aware of the instance but is not protecting it with a policy")
-      recommendation = None
 
-    # now check for any recommendations to the computer
-    for rule_type, rules in computer.recommended_rules.items():
-      self._log("Checking for recommended {} rules".format(rule_type))
-      for rule_id, rule in rules.items():
-        if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
-      
-      for application_type_id, application_type in computer.application_types.items():
-        if application_type.tbuid in self.tbuids:
-          sqli_recommendations.append(application_type)
+    if 'cloud_instance_id' in dir(computer) and computer.cloud_instance_id and computer.cloud_instance_id.startswith('i-'):
+      # this is an AWS instance
+          
+      # check at the policy level
+      if computer.policy_id:
+        self._log("Computer is protected by Deep Security. Checking rules")
+        for rule_type in [
+          'integrity_monitoring_rule_ids',
+          'intrusion_prevention_rule_ids',
+          'log_inspection_rule_ids'
+          # application_types
+          ]:
+          if self.dsm.policies.has_key(computer.policy_id):
+            rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
+            if rule_set and rule_set.has_key('item'): # policy has these type of rules applied
+              for rule_id in rule_set['item']:
+                rule = self.dsm.rules[rule_type.replace('_rule_ids', '')][rule_id]
+                if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
+            else:
+              self._log("Instance {} has no rules of type {} applied".format(computer.cloud_instance_id, rule_type))
+          else:
+            self._log("Policy {} is not available for analysis".format(computer.policy_id))
+      else:
+        self._log("Deep Security is aware of the instance but is not protecting it with a policy")
+        recommendation = None
+
+      # now check for any recommendations to the computer
+      if computer.recommended_rules:
+        for rule_type, rules in computer.recommended_rules.items():
+          self._log("Checking for recommended {} rules".format(rule_type))
+          for rule_id, rule in rules.items():
+            if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
+      else:
+        self._log("There are no rule recommendations for instance {}".format(computer.cloud_instance_id))
 
     if len(sqli_recommendations) > 1:
       recommendation = True if len(sqli_recommendations) > 0 else False
