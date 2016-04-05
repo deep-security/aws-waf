@@ -15,13 +15,13 @@ import core
 
 def run_script(args):
   # configure the command line args
-  parser = core.get_arg_parser(prog='ds-to-aws-waf.py sqli', add_help=True)
+  parser = core.get_arg_parser(prog='ds-to-aws-waf.py xss', add_help=True)
   parser.add_argument('-l', '--list', action='store_true', required=False, help='List the available EC2 instances')
   parser.add_argument('--tag', action=core.StoreNameValuePairOnEquals, nargs="+", dest="tags", required=False, help='Specify the tags to filter the EC2 instances by. Multiple tags are cumulative')
 
-  parser.add_argument('--create-match', action='store_true', required=False, dest="create_match", help='Create the SQLi match condition for use in various rules')
+  parser.add_argument('--create-match', action='store_true', required=False, dest="create_match", help='Create the XSS match condition for use in various rules')
   parser.add_argument('--map-to-wacl', action='store_true', required=False, dest="map_to_wacl", help='Attempt to map each instance to an AWS WAF WACL')
-  parser.add_argument('--create-rule', action='store_true', required=False, dest="create_rule", help='Create the SQLi rule for instances that can be mapped to an AWS WAF WACL. Used in conjunction with -l/--list')
+  parser.add_argument('--create-rule', action='store_true', required=False, dest="create_rule", help='Create the XSS rule for instances that can be mapped to an AWS WAF WACL. Used in conjunction with -l/--list')
   
   script = Script(args[1:], parser)
 
@@ -57,7 +57,7 @@ def run_script(args):
       script._log("* DRY RUN ENABLED. NO CHANGES WILL BE MADE", priority=True)
       script._log("***********************************************************************", priority=True)
     
-    # create the recommend SQLi match condition
+    # create the recommend XSS match condition
     script.create_match_condition()
 
   if script.args.map_to_wacl:
@@ -82,8 +82,8 @@ class Script(core.ScriptContext):
     self.elb = None
     self.cloudfront = None
 
-    self.MATCH_SET_NAME = "Deep Security SQLi Guidance"
-    self.RULE_NAME = "Deep Security Block SQLi"
+    self.MATCH_SET_NAME = "Deep Security XSS Guidance"
+    self.RULE_NAME = "Deep Security Block XSS"
     
     self.ip_lists = []
     self.instances = {}
@@ -110,12 +110,12 @@ class Script(core.ScriptContext):
 
   def cache_patterns(self):
     """
-    Cache the patterns for matching Deep Security rules for SQLi
+    Cache the patterns for matching Deep Security rules for XSS
     recommendations
     """
     CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
-    TBUIDS = os.path.join(CURRENT_FILE_DIR, 'sqli.tbuids')
-    PATTERNS = os.path.join(CURRENT_FILE_DIR, 'sqli.patterns')
+    TBUIDS = os.path.join(CURRENT_FILE_DIR, 'xss.tbuids')
+    PATTERNS = os.path.join(CURRENT_FILE_DIR, 'xss.patterns')
 
     if os.path.exists(TBUIDS):
       self._log("Caching TBUIDS for rule matching")
@@ -250,19 +250,19 @@ class Script(core.ScriptContext):
 
     return recommendations
 
-  def does_rule_match_sqli(self, rule):
+  def does_rule_match_xss(self, rule):
     """
     Determine if a rule matches the defined parameters for an 
-    SQLi recommendation
+    XSS recommendation
     """
-    sqli_recommended = False
+    xss_recommended = False
     if 'tbuid' in dir(rule):
-      sqli_recommended = True
+      xss_recommended = True
 
     if 'application_type_id' in dir(rule):
       if self.dsm.rules['application_types'].has_key(rule.application_type_id):
         if self.dsm.rules['application_types'][rule.application_type_id].tbuid in self.tbuids:
-          sqli_recommended = True
+          xss_recommended = True
 
     for pattern in self.patterns:
       if 'name' in dir(rule) and 'description' in dir(rule):
@@ -270,21 +270,21 @@ class Script(core.ScriptContext):
           try:
             m = re.search(pattern, attr)
             if m:
-              sqli_recommended = True
+              xss_recommended = True
           except Exception, err: pass # @TODO handle this gracefully
 
-    return sqli_recommended
+    return xss_recommended
 
   def analyze_computer(self, ds_computer_id):
     """
     Analyze the specified computer to determine if it should be 
-    protected by SQLi rules
+    protected by XSS rules
     """
     self._log("Analyzing computer {}:{}".format(ds_computer_id, self.dsm.computers[ds_computer_id].name))
     recommendation = False
     self.dsm.get_rule_recommendations_for_computer(ds_computer_id)
     computer = self.dsm.computers[ds_computer_id]
-    sqli_recommendations = []
+    xss_recommendations = []
 
     if 'cloud_instance_id' in dir(computer) and computer.cloud_instance_id and computer.cloud_instance_id.startswith('i-'):
       # this is an AWS instance
@@ -298,16 +298,16 @@ class Script(core.ScriptContext):
           'log_inspection_rule_ids'
           # application_types
           ]:
-          if self.dsm.policies.has_key(computer.policy_id):
-            rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
+          if self.dsm.policies.has_key(int(computer.policy_id)):
+            rule_set = getattr(self.dsm.policies[int(computer.policy_id)], rule_type)
             if rule_set and rule_set.has_key('item'): # policy has these type of rules applied
               for rule_id in rule_set['item']:
-                rule = self.dsm.rules[rule_type.replace('_rule_ids', '')][rule_id]
-                if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
+                rule = self.dsm.rules[rule_type.replace('_rule_ids', '')][int(rule_id)]
+                if self.does_rule_match_xss(rule): xss_recommendations.append(rule)
             else:
               self._log("Instance {} has no rules of type {} applied".format(computer.cloud_instance_id, rule_type))
           else:
-            self._log("Policy {} is not available for analysis".format(computer.policy_id))
+            self._log("Policy {} is not available for analysis".format(int(computer.policy_id)))
       else:
         self._log("Deep Security is aware of the instance but is not protecting it with a policy")
         recommendation = None
@@ -317,13 +317,13 @@ class Script(core.ScriptContext):
         for rule_type, rules in computer.recommended_rules.items():
           self._log("Checking for recommended {} rules".format(rule_type))
           for rule_id, rule in rules.items():
-            if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
+            if self.does_rule_match_xss(rule): xss_recommendations.append(rule)
       else:
         self._log("There are no rule recommendations for instance {}".format(computer.cloud_instance_id))
 
-    if len(sqli_recommendations) > 1:
-      recommendation = True if len(sqli_recommendations) > 0 else False
-      self._log("Found {} rules indicating this instance should be protected by an SQLi rule set".format(len(sqli_recommendations)))
+    if len(xss_recommendations) > 1:
+      recommendation = True if len(xss_recommendations) > 0 else False
+      self._log("Found {} rules indicating this instance should be protected by an XSS rule set".format(len(xss_recommendations)))
 
     return recommendation
 
@@ -354,31 +354,31 @@ class Script(core.ScriptContext):
 
   def create_match_condition(self):
     """
-    Create the recommend SQLi match condition
+    Create the recommend XSS match condition
 
-    Reference for SQLi match sets is available at http://docs.aws.amazon.com/waf/latest/developerguide/web-acl-sql-conditions.html
+    Reference for XSS match sets is available at http://docs.aws.amazon.com/waf/latest/developerguide/web-acl-xss-conditions.html
     """
     # does the match set already exist?
     exists = False
-    response = self.waf.list_sql_injection_match_sets(Limit=100)
-    if response and response.has_key('SqlInjectionMatchSets'):
-      for match_set in response['SqlInjectionMatchSets']:
+    response = self.waf.list_xss_match_sets(Limit=100)
+    if response and response.has_key('XssMatchSets'):
+      for match_set in response['XssMatchSets']:
         if match_set['Name'] == self.MATCH_SET_NAME:
           exists = True
           break
 
     if exists:
-      self._log("Desired SQLi match set already exists. No action needed")
+      self._log("Desired XSS match set already exists. No action needed")
     else:
-      self._log("Attempting to create a new SQLi match set; {}".format(self.MATCH_SET_NAME))
-      sqli_match_set_updates = [
-        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'URI', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
-        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
-        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
-        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},
-        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
-        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
-        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},
+      self._log("Attempting to create a new XSS match set; {}".format(self.MATCH_SET_NAME))
+      xss_match_set_updates = [
+        { 'Action': 'INSERT', 'XssMatchTuple': { 'FieldToMatch': { 'Type': 'URI', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
+        { 'Action': 'INSERT', 'XssMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
+        { 'Action': 'INSERT', 'XssMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
+        { 'Action': 'INSERT', 'XssMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},
+        { 'Action': 'INSERT', 'XssMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
+        { 'Action': 'INSERT', 'XssMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
+        { 'Action': 'INSERT', 'XssMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},
         ]
       if not self.args.dryrun:
         # get a change token
@@ -387,17 +387,17 @@ class Script(core.ScriptContext):
           # create the match set
           match_set_id = None
           try:
-            response = self.waf.create_sql_injection_match_set(
+            response = self.waf.create_xss_match_set(
               Name=self.MATCH_SET_NAME,
               ChangeToken=change_token
               )
-            self._log("Created a new SQLi match set: {}".format(self.MATCH_SET_NAME))
+            self._log("Created a new XSS match set: {}".format(self.MATCH_SET_NAME))
 
-            if response and response.has_key('SqlInjectionMatchSet') and response['SqlInjectionMatchSet'].has_key('SqlInjectionMatchSetId'):
-              match_set_id = response['SqlInjectionMatchSet']['SqlInjectionMatchSetId']
+            if response and response.has_key('XssMatchSet') and response['XssMatchSet'].has_key('XssMatchSetId'):
+              match_set_id = response['XssMatchSet']['XssMatchSetId']
 
           except Exception, err:
-            self._log("Could not create a new SQLi match set", err=err)
+            self._log("Could not create a new XSS match set", err=err)
             return
 
           if match_set_id:
@@ -406,45 +406,45 @@ class Script(core.ScriptContext):
             if change_token:
               # update the match set
               try:
-                response = self.waf.update_sql_injection_match_set(
-                  SqlInjectionMatchSetId=match_set_id,
+                response = self.waf.update_xss_match_set(
+                  XssMatchSetId=match_set_id,
                   ChangeToken=change_token,
-                  Updates=sqli_match_set_updates
+                  Updates=xss_match_set_updates
                   )
-                self._log("Updated SQLi match set; {}".format(self.MATCH_SET_NAME), priority=True)
+                self._log("Updated XSS match set; {}".format(self.MATCH_SET_NAME), priority=True)
               except Exception, err:
-                self._log("Unable to update SQLi match set", err=err)
+                self._log("Unable to update XSS match set", err=err)
       else:
-        self._log("Would request an AWS WAF change token to create a new SQLi match set", priority=True)
-        self._log("   SQLi match set will contain;", priority=True)
-        for update in sqli_match_set_updates:
+        self._log("Would request an AWS WAF change token to create a new XSS match set", priority=True)
+        self._log("   XSS match set will contain;", priority=True)
+        for update in xss_match_set_updates:
           self._log("      {}".format(update), priority=True)
 
   def get_match_condition(self):
     """
-    Get the ID of the Deep Security SQLi match condition
+    Get the ID of the Deep Security XSS match condition
     """
     result = None
 
     match_set_id = None
-    response = self.waf.list_sql_injection_match_sets(Limit=100)
-    if response and response.has_key('SqlInjectionMatchSets'):
-      for match_set in response['SqlInjectionMatchSets']:
+    response = self.waf.list_xss_match_sets(Limit=100)
+    if response and response.has_key('XssMatchSets'):
+      for match_set in response['XssMatchSets']:
         if match_set['Name'] == self.MATCH_SET_NAME:
-          match_set_id = match_set['SqlInjectionMatchSetId']
+          match_set_id = match_set['XssMatchSetId']
 
     if match_set_id:
       try:
-        response = self.waf.get_sql_injection_match_set(SqlInjectionMatchSetId=match_set_id)
-        if response and response.has_key('SqlInjectionMatchSet'):
-          result = response['SqlInjectionMatchSet']['SqlInjectionMatchSetId']
+        response = self.waf.get_xss_match_set(XssMatchSetId=match_set_id)
+        if response and response.has_key('XssMatchSet'):
+          result = response['XssMatchSet']['XssMatchSetId']
       except Exception, err: pass
 
     return result
 
   def get_rule(self):
     """
-    Get the ID of the Deep Security SQLi rule
+    Get the ID of the Deep Security XSS rule
     """
     result = None
 
@@ -466,16 +466,16 @@ class Script(core.ScriptContext):
 
   def create_wacl_rule(self):
     """
-    Create the SQLi rule for the specified WACL
+    Create the XSS rule for the specified WACL
     """
-    # make sure the SQLi match condition exists
+    # make sure the XSS match condition exists
     self.create_match_condition() # self.args.dryrun is handled in the function
     match_set_id = self.get_match_condition()
 
-    sqli_rule_updates = [
+    xss_rule_updates = [
         { 'Action': 'INSERT', 'Predicate': {
               'Negated': True,
-              'Type': 'SqlInjectionMatch',
+              'Type': 'XssMatch',
               'DataId': match_set_id,
             }
           }
@@ -488,7 +488,7 @@ class Script(core.ScriptContext):
         if change_token:
           response = self.waf.create_rule(
               Name=self.RULE_NAME,
-              MetricName='DsSqliBlocks',
+              MetricName='DsXssBlocks',
               ChangeToken=change_token
             )
 
@@ -503,21 +503,21 @@ class Script(core.ScriptContext):
               response = self.waf.update_rule(
                   RuleId=rule_id,
                   ChangeToken=change_token, 
-                  Updates=sqli_rule_updates,
+                  Updates=xss_rule_updates,
                 )
 
               if response and response.has_key('ChangeToken'):
                 self._log("Successfully created rule []".format(self.RULE_NAME), priority=True)
-                self._log("   With predicates: {}".format(sqli_rule_updates))
+                self._log("   With predicates: {}".format(xss_rule_updates))
               else:
                 self._log("Failed to create rule []".format(self.RULE_NAME))
       else:
         self._log("Would create rule []".format(self.RULE_NAME))
-        self._log("   With predicates: {}".format(sqli_rule_updates))
+        self._log("   With predicates: {}".format(xss_rule_updates))
 
   def update_wacl(self, wacl_id):
     """
-    Update the specified WACL with the Deep Security SQLi rule
+    Update the specified WACL with the Deep Security XSS rule
     """
 
     # we need to determine the priority of the rule (rules cannot be assigned the same priority)
