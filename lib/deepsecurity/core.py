@@ -212,6 +212,7 @@ class CoreApi(object):
       url_request = urllib2.Request(url, data=json.dumps(request['data']), headers=headers)
       request_type = 'POST'
       self.log("Making a REST POST request with headers {}".format(headers), level='debug')
+      self.log("    and data {}".format(request['data']), level='debug')
     else:
       # GET
       url_request = urllib2.Request(url, headers=headers)
@@ -388,6 +389,13 @@ class CoreDict(dict):
                   break # and move on to the new kwarg
                 else:
                   item_matches = False
+              elif type(attr_to_check) == type([]):
+                # check for the match in the list
+                if match_attr_val in attr_to_check:
+                  item_matches = True
+                  break # and move on to the new kwarg
+                else:
+                  item_matches = False
               else:
                 # object comparison
                 if attr_to_check == match_attr_val:
@@ -411,6 +419,9 @@ class CoreObject(object):
         val = None
 
       new_key = translation.Terms.get(k)
+
+      # make sure any integer IDs are stored as an int
+      if new_key == 'id' and re.search('^\d+$', v.strip()): val = int(v)
 
       try:
         setattr(self, new_key, val)

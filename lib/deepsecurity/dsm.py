@@ -7,6 +7,7 @@ import re
 # project libraries
 import core
 import computers
+import environments
 import policies
 import translation
 
@@ -33,6 +34,7 @@ class Manager(core.CoreApi):
     self.policies = policies.Policies(manager=self)
     self.rules = policies.Rules(manager=self)
     self.ip_lists = policies.IPLists(manager=self)
+    self.cloud_accounts = environments.CloudAccounts(manager=self)
 
   def __del__(self):
     """
