@@ -9,11 +9,11 @@ A simple tool set to help build AWS WAF rule sets based on intelligence from Dee
 - [Pre-Requisites](#pre-requisites)
 - [Usage](#usage)
    - [iplists](#usage-iplists)
-   - [sqli](#usage-sqli)
+   - [sqli & xss](#usage-sqli-xss)
 - [SSL Certificate Validation](#ssl-certificate-validation)
 - [AWS WAF Costs](#aws-waf-costs)
   - [iplists](#aws-waf-costs-iplists)
-  - [sqli](#aws-waf-costs-sqli)
+  - [sqli & xss](#aws-waf-costs-sqli)
 
 <a name="pre-requisites" />
 
@@ -38,9 +38,10 @@ usage: ds-to-aws-waf [COMMAND]
 
    iplist
       > Push a Deep Security IP list to an AWS WAF IP Set
+   xss
+      > Determine which instances protected by Deep Security should also be protected by AWS WAF XSS rules
    sqli
       > Determine which instances protected by Deep Security should also be protected by AWS WAF SQLi rules
-   ...
 ```
 
 Each script in this set works under a common structure. There are several shared arguments;
@@ -182,48 +183,54 @@ optional arguments:
                         source for the AWS WAF IP Set
 ```
 
-<a name="usage-sqli" />
+<a name="usage-sqli-xss" />
 
-### sqli
+### sqli & xss
 
-The sqli command contains two parts; the analysis of the workloads on the specified EC2 instances and the creation of an SQLi match condition.
+The sqli and xss commands contain two parts; the analysis of the workloads on the specified EC2 instances and the creation of an SQLi/XSS match condition. These two commands work in the exact same manner. The only difference is the initial command of ```sqli``` or ```xss```.
 
 You can run either part separately, though **the creation of the match condition only needs to be run once per account.**
 
 Common usage;
 
 ```
-# create a new SQLi match condition 
+# create a new SQLi or XSS match condition 
 # ...for Deep Security as a Service
 python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT --create-match
+python ds-to-aws-waf.py xss -u WAF -p PASSWORD -t TENANT --create-match
 
 # ...for another Deep Security manager
 python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation --create-match
+python ds-to-aws-waf.py xss -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation --create-match
 ```
 
-To find out which instances should be protected by an AWS WAF SQLi rule;
+To find out which instances should be protected by an AWS WAF SQLi or XSS rule;
 
 ```
 # find out which instances should be protected by an AWS WAF SQLi rule
 # ...for Deep Security as a Service
 python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT -l
+python ds-to-aws-waf.py xss -u WAF -p PASSWORD -t TENANT -l
 
 # ...for another Deep Security manager
 python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
+python ds-to-aws-waf.py xss -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l
 
 # filter those instances by tag and region
 # ...for Deep Security as a Service
 python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -t TENANT -l --tag Name=Test --tag Environment=PROD -r us-east-1
+python ds-to-aws-waf.py xss -u WAF -p PASSWORD -t TENANT -l --tag Name=Test --tag Environment=PROD -r us-east-1
 
 # ...for another Deep Security manager
 python ds-to-aws-waf.py sqli -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l --tag Name=Test --tag Environment=PROD -r us-east-1
+python ds-to-aws-waf.py xss -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-validation -l --tag Name=Test --tag Environment=PROD -r us-east-1
 
 ```
 
 The complete command syntax is;
 
 ```
-usage: ds-to-aws-waf.py sqli [-h] [-d DSM] [--dsm-port DSM_PORT] -u
+usage: ds-to-aws-waf.py (sqli|xss) [-h] [-d DSM] [--dsm-port DSM_PORT] -u
                              DSM_USERNAME -p DSM_PASSWORD [-t DSM_TENANT]
                              [-r AWS_REGION] [--ignore-ssl-validation]
                              [--dryrun] [--verbose] [-l]
@@ -331,11 +338,11 @@ We've done our best to ensure that each command optimizes the changes it makes i
 
 The *iplists* command does not create a WACL or rule on your behalf. It creates new IPSet objects that can be used in an AWS WAF rule as a match condition. There are no charges for these IPSets.
 
-<a name="aws-waf-costs-sqli" />
+<a name="aws-waf-costs-sqli-xss" />
 
-### sqli
+### sqli & xss
 
-The *sqli* command provides recommendation as to which instances should be protected by an rule with an SQLi match set. Additionally, you can ask the command to create an SQLi match set that covers most web applications.
+The *sqli* and *xss* commands provide recommendation as to which instances should be protected by an rule with an SQLi match set. Additionally, you can ask the command to create an SQLi or XSS match set that covers most web applications.
 
 There is no charge for the match set. Charge start when you create a rule using the match set.
 
