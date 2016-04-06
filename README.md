@@ -13,7 +13,7 @@ A simple tool set to help build AWS WAF rule sets based on intelligence from Dee
 - [SSL Certificate Validation](#ssl-certificate-validation)
 - [AWS WAF Costs](#aws-waf-costs)
   - [iplists](#aws-waf-costs-iplists)
-  - [sqli & xss](#aws-waf-costs-sqli)
+  - [sqli & xss](#aws-waf-costs-sqli-xss)
 
 <a name="pre-requisites" />
 
