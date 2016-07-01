@@ -302,7 +302,7 @@ class Script(core.ScriptContext):
             rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
             if rule_set and rule_set.has_key('item'): # policy has these type of rules applied
               for rule_id in rule_set['item']:
-                rule = self.dsm.rules[rule_type.replace('_rule_ids', '')][rule_id]
+                rule = self.dsm.rules[rule_type.replace('_rule_ids', '')][int(rule_id)]
                 if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
             else:
               self._log("Instance {} has no rules of type {} applied".format(computer.cloud_instance_id, rule_type))
@@ -376,6 +376,8 @@ class Script(core.ScriptContext):
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'CMD_LINE' }},
+        { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'QUERY_STRING', 'Data': 'string' }, 'TextTransformation': 'COMPRESS_WHITE_SPACE' }},
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'URL_DECODE' }},
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'HTML_ENTITY_DECODE' }},
         { 'Action': 'INSERT', 'SqlInjectionMatchTuple': { 'FieldToMatch': { 'Type': 'BODY', 'Data': 'string' }, 'TextTransformation': 'LOWERCASE' }},

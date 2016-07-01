@@ -281,4 +281,4 @@ class Script(core.ScriptContext):
       for waf_set in self.ip_sets:
         print "{}\t{}".format(waf_set['IPSetId'], waf_set['Name'])
     else:
-      print "---\t No AWS WAF WACLs available"
+      print "---\t No AWS WAF IP Sets available"

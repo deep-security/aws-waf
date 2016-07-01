@@ -16,6 +16,7 @@ import lib.core
 import lib.iplists
 import lib.sqli
 import lib.xss
+import lib.rules
 
 def parse_args(str_to_parse=None):
   """
@@ -46,6 +47,11 @@ class Script(lib.core.ScriptContext):
             'help': 'Determine which instances protected by Deep Security should also be protected by AWS WAF XSS rules',
             'cmd': lib.xss.run_script,
           },
+        'rules': 
+          {
+            'help': 'Determine which instances protected by Deep Security should also be protected by AWS WAF SQLi and XSS rules',
+            'cmd': lib.rules.run_script,
+          },          
       }
 
     if not self.command_to_run in self.available_commands.keys():
