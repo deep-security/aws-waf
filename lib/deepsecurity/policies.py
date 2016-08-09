@@ -25,8 +25,11 @@ class Policies(core.CoreDict):
       for policy in response['data']:
         policy_obj = Policy(self.manager, policy, self.log)
         if policy_obj:
-          self[policy_obj.id] = policy_obj
-          self.log("Added Policy {}".format(policy_obj.id), level='debug')
+          try:
+            self[policy_obj.id] = policy_obj
+            self.log("Added Policy {}".format(policy_obj.id), level='debug')
+          except Exception, err:
+            self.log("Could not add Policy {}".format(policy_obj), level='warning', err=err)
 
     return len(self)
 
@@ -101,7 +104,7 @@ class Policy(core.CoreObject):
     self.computers = core.CoreDict()
     self.rules = core.CoreDict()
     if api_response: self._set_properties(api_response, log_func)
-    self._flatten_rules()
+    #self._flatten_rules()
 
   def _flatten_rules(self):
     """
@@ -117,6 +120,28 @@ class Policy(core.CoreObject):
       if rules:
         for rule in rules['item']:
           self.rules['{}-{}'.format(rule_type.replace('rule_ids', ''), rule)] = None
+
+  def save(self):
+    """
+    Save any changes made to the policy
+    """
+    result = False
+
+    soap_call = self.manager._get_request_format(call='securityProfileSave')
+    soap_call['data'] = { 'sp': self.to_dict() }
+
+    if soap_call['data']['sp'].has_key('manager'):
+      del(soap_call['data']['sp']['manager'])
+
+    response = self.manager._request(soap_call)
+    if response['status'] == 200:
+      result = True
+    else:
+      result = False
+      if 'log' in dir(self):
+        self.log("Could not save the policy. Returned: {}".format(response), level='error')
+
+    return result
 
 class Rule(core.CoreObject):
   def __init__(self, manager=None, api_response=None, log_func=None, rule_type=None):

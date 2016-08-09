@@ -7,3 +7,5 @@ sys.path.append(current_path)
 
 # import project files as required
 import dsm
+import translation
+translation.Terms.read_terms_file()

@@ -18,14 +18,16 @@ class Manager(core.CoreApi):
       tenant=None,
       username=None,
       password=None,
+      prefix="",
       ignore_ssl_validation=False
       ):
     core.CoreApi.__init__(self)
     self._hostname = None
     self._port = port
-    self._tenant = tenant
-    self._username = username
-    self._password = password
+    self._tenant = unicode(tenant, "utf-8") if tenant else None # no harm in converting to ensure compatibility with non-latin tenant names
+    self._username = unicode(username, "utf-8") if username else None
+    self._password = unicode(password, "utf-8") if password else None
+    self._prefix = prefix
     self.ignore_ssl_validation = ignore_ssl_validation
     self.hostname = hostname
 
@@ -48,7 +50,8 @@ class Manager(core.CoreApi):
     """
     Return a better string representation
     """
-    return "Manager <{}:{}>".format(self.hostname, self.port)
+    dsm_port = ":{}".format(self.port) if self.port else ""
+    return "Manager <{}{}>".format(self.hostname, dsm_port)
 
   # *******************************************************************
   # properties
@@ -68,7 +71,7 @@ class Manager(core.CoreApi):
 
   @port.setter
   def port(self, value):
-    self._port = int(value)
+    self._port = int(value) if value else None
     self._set_endpoints()
 
   @property
@@ -95,6 +98,14 @@ class Manager(core.CoreApi):
     self._password = value
     self._reset_session()
 
+  @property
+  def prefix(self): return self._prefix
+
+  @prefix.setter
+  def prefix(self, value):
+    if not value or not type(value) in [type(''), type(u'')]: value = ""
+    self._prefix = value
+
   # *******************************************************************
   # methods
   # *******************************************************************
@@ -102,8 +113,9 @@ class Manager(core.CoreApi):
     """
     Set the API endpoints based on the current configuration
     """
-    self._rest_api_endpoint = "https://{}:{}/rest".format(self.hostname, self.port)
-    self._soap_api_endpoint = "https://{}:{}/webservice/Manager".format(self.hostname, self.port)
+    dsm_port = ":{}".format(self.port) if self.port else "" # allow for endpoints with no port specified
+    self._rest_api_endpoint = "https://{}{}/{}rest".format(self.hostname, dsm_port, self.prefix)
+    self._soap_api_endpoint = "https://{}{}/{}webservice/Manager".format(self.hostname, dsm_port, self.prefix)
 
   def _reset_session(self):
     """

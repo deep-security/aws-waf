@@ -229,6 +229,7 @@ class CoreApi(object):
     result = {
       'status': response.getcode() if response else None,
       'raw': response.read() if response else None,
+      'headers': dict(response.headers) if response else dict(),
       'data': None
     }
     bytes_of_data = len(result['raw']) if result['raw'] else 0
@@ -254,8 +255,9 @@ class CoreApi(object):
       else:
         # JSON response
         try:
-          if result['raw']:
-            result['data'] = json.loads(result['raw'])
+          if result['raw'] and result['status'] != 204:
+            result['type'] = result['headers']['content-type']
+            result['data'] = json.loads(result['raw']) if 'json' in result['type'] else None
         except Exception, json_err:
           # report the exception as 'info' because it's not fatal and the data is 
           # still captured in result['raw']
@@ -270,7 +272,7 @@ class CoreApi(object):
     if not type(d) == type({}): return d
     new_d = d.copy()
     for k,v in d.items():
-      new_key = "{}:{}".format(prefix, k)
+      new_key = u"{}:{}".format(prefix, k)
       new_v = v
       if type(v) == type({}): new_v = self._prefix_keys(prefix, v)
       new_d[new_key] = new_v 
@@ -283,7 +285,7 @@ class CoreApi(object):
     Prepare the complete XML SOAP envelope
     """
     data = xmltodict.unparse(self._prefix_keys('ns1', { call: details }), pretty=False, full_document=False)
-    soap_xml = """
+    soap_xml = u"""
     <?xml version="1.0" encoding="UTF-8"?>
     <SOAP-ENV:Envelope xmlns:ns0="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="urn:Manager" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
       <SOAP-ENV:Header/>
@@ -293,7 +295,10 @@ class CoreApi(object):
     </SOAP-ENV:Envelope>
     """.format(data).strip()
 
-    return soap_xml
+    # convert any nil values to the proper format
+    soap_xml = re.sub(r'<([^>]+)></\1>', r'<\1 xsi:nil="true" />', soap_xml)
+
+    return soap_xml.encode('utf-8')
 
   def log(self, message='', err=None, level='info'):
     """
@@ -433,3 +438,22 @@ class CoreObject(object):
       except Exception, err:
         if log_func:
           log_func("Could not set property {} to value {} for object {}".format(k, v, s))
+          try:
+            setattr(self, log, log_func)
+          except: pass
+
+  def to_dict(self):
+    """
+    Convert the object properties to API keypairs
+    """
+    result = {}
+
+    api_properties = translation.Terms.api_to_new.values()
+
+    for p in dir(self):
+      if p in api_properties:
+        key = translation.Terms.get_reverse(p)
+        val = getattr(self, p)
+        result[key] = val
+
+    return result

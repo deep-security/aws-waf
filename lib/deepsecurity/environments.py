@@ -31,20 +31,25 @@ class CloudAccounts(core.CoreDict):
     responses = {}
 
     regions = {
-      'us-east-1': 'amazon.cloud.region.key.1',
-      'us-west-1': 'amazon.cloud.region.key.2',
-      'us-west-2': 'amazon.cloud.region.key.3',
-      'eu-west-1': 'amazon.cloud.region.key.4',
-      'ap-southeast-1': 'amazon.cloud.region.key.5',
-      'ap-northeast-1': 'amazon.cloud.region.key.6',
-      'sa-east-1': 'amazon.cloud.region.key.7',
+      'us-east-1': 'amazon.cloud.region.key.1', # N. Virginia
+      'us-west-1': 'amazon.cloud.region.key.2', # N. California
+      'us-west-2': 'amazon.cloud.region.key.3', # Oregon
+      'eu-west-1': 'amazon.cloud.region.key.4', # Ireland
+      'ap-southeast-1': 'amazon.cloud.region.key.5', # Singapore
+      'ap-northeast-1': 'amazon.cloud.region.key.6', # Tokyo
+      'sa-east-1': 'amazon.cloud.region.key.7', # Sao Paulo
+      'ap-southeast-2': 'amazon.cloud.region.key.8', # Sydney
+      # need to add:
+      #   ap-south-1 / Mumbai
+      #   ap-northeast-2 / Seoul
+      #   eu-central-1 / Frankfurt
     }
 
     regions_to_add = []
     if regions.has_key(region):
       regions_to_add.append(region)
     elif region == 'all':
-      regions_to_add.append(regions.keys())
+      regions_to_add = regions.keys()
     else:
       self.log("A region must be specified when add an AWS account to Deep Security")
 

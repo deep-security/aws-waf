@@ -295,8 +295,8 @@ class Script(core.ScriptContext):
         for rule_type in [
           'integrity_monitoring_rule_ids',
           'intrusion_prevention_rule_ids',
-          'log_inspection_rule_ids'
-          # application_types
+          'log_inspection_rule_ids',
+          'application_types',
           ]:
           if self.dsm.policies.has_key(computer.policy_id):
             rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
