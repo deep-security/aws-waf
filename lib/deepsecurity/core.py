@@ -76,11 +76,12 @@ class CoreApi(object):
 
     return logger
 
-  def _get_request_format(self, api=None, call=None):
+  def _get_request_format(self, api=None, call=None, use_cookie_auth=False):
     if not api: api = self.API_TYPE_SOAP
     return {
       'api': api,
       'call': call,
+      'use_cookie_auth': use_cookie_auth,
       'query': None,
       'data': None,
     }
@@ -107,6 +108,9 @@ class CoreApi(object):
         Data to post. For SOAP API calls this will be the SOAP envelope. For
         REST API calls this will be a dict converted to JSON automatically 
         by this method
+
+      use_cookie_auth
+        Whether or not to use an HTTP Cookie in lieu of a querystring for authorization
 
     ## Output
 
@@ -139,9 +143,9 @@ class CoreApi(object):
     # add the authentication parameters
     if auth_required:
       if request['api'] == self.API_TYPE_REST:
-        # sID is a query string
-        if not request['query']: request['query'] = {}
-        request['query']['sID'] = self._sessions[self.API_TYPE_REST]
+        if not request['use_cookie_auth']: # sID is a query string
+          if not request['query']: request['query'] = {}
+          request['query']['sID'] = self._sessions[self.API_TYPE_REST]
       elif request['api'] == self.API_TYPE_SOAP:
         # sID is part of the data
         if not request['data']: request['data'] = {}
@@ -182,6 +186,11 @@ class CoreApi(object):
 
     # authentication calls don't accept the Accept header
     if request['call'].startswith('authentication'): del(headers['Accept'])
+    
+    # some rest calls use a cookie to pass the sID
+    if request['api'] == self.API_TYPE_REST and request['use_cookie_auth']:
+      headers['Cookie'] = 'sID="{}"'.format(self._sessions[self.API_TYPE_REST])
+
     if request['api'] == self.API_TYPE_REST and request['call'] in [
       'apiVersion',
       'status/manager/ping'
@@ -229,6 +238,7 @@ class CoreApi(object):
     result = {
       'status': response.getcode() if response else None,
       'raw': response.read() if response else None,
+      'headers': dict(response.headers) if response else dict(),
       'data': None
     }
     bytes_of_data = len(result['raw']) if result['raw'] else 0
@@ -254,12 +264,14 @@ class CoreApi(object):
       else:
         # JSON response
         try:
-          if result['raw']:
-            result['data'] = json.loads(result['raw'])
+          if result['raw'] and result['status'] != 204:
+            result['type'] = result['headers']['content-type']
+            result['data'] = json.loads(result['raw']) if 'json' in result['type'] else None
         except Exception, json_err:
           # report the exception as 'info' because it's not fatal and the data is 
           # still captured in result['raw']
           self.log("Could not convert response from call {} to JSON. Threw exception:\n\t{}".format(request['call'], json_err), level='info')
+          
     return result
 
   def _prefix_keys(self, prefix, d):
@@ -270,7 +282,7 @@ class CoreApi(object):
     if not type(d) == type({}): return d
     new_d = d.copy()
     for k,v in d.items():
-      new_key = "{}:{}".format(prefix, k)
+      new_key = u"{}:{}".format(prefix, k)
       new_v = v
       if type(v) == type({}): new_v = self._prefix_keys(prefix, v)
       new_d[new_key] = new_v 
@@ -283,7 +295,7 @@ class CoreApi(object):
     Prepare the complete XML SOAP envelope
     """
     data = xmltodict.unparse(self._prefix_keys('ns1', { call: details }), pretty=False, full_document=False)
-    soap_xml = """
+    soap_xml = u"""
     <?xml version="1.0" encoding="UTF-8"?>
     <SOAP-ENV:Envelope xmlns:ns0="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="urn:Manager" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
       <SOAP-ENV:Header/>
@@ -293,7 +305,10 @@ class CoreApi(object):
     </SOAP-ENV:Envelope>
     """.format(data).strip()
 
-    return soap_xml
+    # convert any nil values to the proper format
+    soap_xml = re.sub(r'<([^>]+)></\1>', r'<\1 xsi:nil="true" />', soap_xml)
+
+    return soap_xml.encode('utf-8')
 
   def log(self, message='', err=None, level='info'):
     """
@@ -433,3 +448,111 @@ class CoreObject(object):
       except Exception, err:
         if log_func:
           log_func("Could not set property {} to value {} for object {}".format(k, v, s))
+          try:
+            setattr(self, log, log_func)
+          except: pass
+
+  def to_dict(self):
+    """
+    Convert the object properties to API keypairs
+    """
+    result = {}
+
+    api_properties = translation.Terms.api_to_new.values()
+
+    for p in dir(self):
+      if p in api_properties:
+        key = translation.Terms.get_reverse(p)
+        val = getattr(self, p)
+        result[key] = val
+
+    return result
+
+class CoreList(list):
+  def __init__(self, *args):
+    super(CoreList, self).__init__(args)
+    self._exempt_from_find = []
+
+  def find(self, **kwargs):
+    """
+    Find any items where the values match the cumulative kwargs patterns and return their indices
+
+    If a keyword's value is a list, .find will match on any value for that keyword
+
+    .find(id=1)
+    >>> returns any item with a property 'id' and value in [1]
+        possibilities:
+           { 'id': 1, 'name': 'One'}
+           { 'id': 1, 'name': 'Two'}
+        
+    .find(id=[1,2])
+    >>> returns any item with a property 'id' and value in [1,2]
+        possibilities:
+           { 'id': 1, 'name': 'One'}
+           { 'id': 2, 'name': 'One'}
+           { 'id': 1, 'name': 'Two'}
+           { 'id': 2, 'name': 'Two'}
+
+    .find(id=1, name='One')
+    >>> returns any item with a property 'id' and value in [1] AND a property 'name' and value in ['One']
+        possibilities:
+           { 'id': 1, 'name': 'One'}
+        
+    .find(id=[1,2], name='One')
+    >>> returns any item with a property 'id' and value in [1,2] AND a property 'name' and value in ['One']
+        possibilities:
+           { 'id': 1, 'name': 'One'}
+           { 'id': 2, 'name': 'One'}
+
+    .find(id=[1,2], name=['One,Two'])
+    >>> returns any item with a property 'id' and value in [1,2] AND a property 'name' and value in ['One','Two']
+        possibilities:
+           { 'id': 1, 'name': 'One'}
+           { 'id': 2, 'name': 'One'}
+           { 'id': 1, 'name': 'Two'}
+           { 'id': 2, 'name': 'Two'}
+    """
+    results = []
+
+    if kwargs:
+      for item_id, item in enumerate(self):
+        item_matches = False
+        for match_attr, match_attr_vals in kwargs.items():
+          if not type(match_attr_vals) == type([]): match_attr_vals = [match_attr_vals]
+
+          # does the current item have the property
+          attr_to_check = None
+          if match_attr in dir(item):
+            attr_to_check = getattr(item, match_attr)
+          elif 'has_key' in dir(item) and item.has_key(match_attr):
+            attr_to_check = item[match_attr]
+
+          if attr_to_check:
+            # does the property match the specified values?
+            for match_attr_val in match_attr_vals:
+              if type(attr_to_check) in [type(''), type(u'')]:
+                # string comparison
+                match = re.search(r'{}'.format(match_attr_val), attr_to_check)
+                if match:
+                  item_matches = True
+                  break # and move on to the new kwarg
+                else:
+                  item_matches = False
+              elif type(attr_to_check) == type([]):
+                # check for the match in the list
+                if match_attr_val in attr_to_check:
+                  item_matches = True
+                  break # and move on to the new kwarg
+                else:
+                  item_matches = False
+              else:
+                # object comparison
+                if attr_to_check == match_attr_val:
+                  item_matches = True
+                  break # and move on to the new kwarg
+                else:
+                  item_matches = False
+
+        if item_matches: results.append(item_id)
+
+    return results

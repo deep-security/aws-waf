@@ -10,14 +10,12 @@ import boto3.session
 # project libraries
 import lib.deepsecurity as deepsecurity
 
-def get_arg_parser(prog='ds-to-aws-waf.py', description=None, add_help=False):
+def get_arg_parser(prog='ds-cli.py', description=None, add_help=False):
   """
   Create a standardized argument parser
   """
   if not description:
-    description = """
-    Create and update AWS WAF WACL rules based on information from a Deep Security installation
-"""
+    description = "A command line interface to Trend Micro's Deep Security"
 
   parser = argparse.ArgumentParser(prog=prog, description=description, add_help=add_help)
 
@@ -33,6 +31,11 @@ def get_arg_parser(prog='ds-to-aws-waf.py', description=None, add_help=False):
   parser.add_argument('-s', '--aws-secret-key', action='store', dest='aws_secret_key', required=False, help='The secret key for an IAM identity in the AWS account to connect to')
   parser.add_argument('-r', '--aws-region', action='store', dest='aws_region', required=False, default='us-east-1', help='The name of AWS region to connect to')
 
+  # Azure arguments
+  parser.add_argument('--azure-subscription-id', action='store', dest='azure_subscription_id', required=False, help='The subscription ID of the Azure subscription to connect to')
+  parser.add_argument('--azure-certificate', action='store', dest='azure_certificate', required=False, help='The certificate associated with the Azure subscription to connect to')
+  parser.add_argument('--azure-certificate-password', action='store', dest='azure_certificate_password', required=False, default='us-east-1', help='The password associated with the specified Azure certificate')
+  
   # general structure arguments
   parser.add_argument('--ignore-ssl-validation', action='store_true', dest='ignore_ssl_validation', required=False, help='Ignore SSL certification validation. Be careful when you use this as it disables a recommended security check. Required for Deep Security Managers using a self-signed SSL certificate')
   parser.add_argument('--dryrun', action='store_true', required=False, help='Do a dry run of the command. This will not make any changes to your AWS WAF service')
