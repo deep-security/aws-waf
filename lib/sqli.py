@@ -238,7 +238,12 @@ class Script(core.ScriptContext):
     recommendations = {}
     if self.dsm and self.dsm.computers and self.instances:
       for computer_id, computer_details in self.dsm.computers.items():
-        ds_instance_map[computer_details.cloud_instance_id] = computer_id
+        cloud_id = None
+        if 'cloud_instance_id' in dir(computer_details):
+          cloud_id = computer_details.cloud_instance_id
+        elif 'cloud_object_instance_id' in dir(computer_details):
+          cloud_id = computer_details.cloud_object_instance_id
+        ds_instance_map[cloud_id] = computer_id
 
     for instance_id, instance_details in self.instances.items():
       if ds_instance_map.has_key(instance_id):
@@ -256,6 +261,9 @@ class Script(core.ScriptContext):
     SQLi recommendation
     """
     sqli_recommended = False
+
+    print ">>> {}".format("\n   ".join(dir(rule)))
+
     if 'tbuid' in dir(rule):
       sqli_recommended = True
 
@@ -293,10 +301,10 @@ class Script(core.ScriptContext):
       if computer.policy_id:
         self._log("Computer is protected by Deep Security. Checking rules")
         for rule_type in [
-          'integrity_monitoring_rule_ids',
-          'intrusion_prevention_rule_ids',
-          'log_inspection_rule_ids',
-          'application_types',
+          'application_type',
+          'integrity_monitoring',
+          'log_inspection',
+          'intrusion_prevention',
           ]:
           if self.dsm.policies.has_key(computer.policy_id):
             rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
