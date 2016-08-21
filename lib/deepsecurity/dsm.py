@@ -182,10 +182,10 @@ class Manager(core.CoreApi):
       response = self._request(rest_call)
       if response and response['status'] == 200: self._sessions[self.API_TYPE_REST] = None
 
-    if self._sessions[self.API_TYPE_REST] and self._sessions[self.API_TYPE_SOAP]:
-      return True
-    else:
+    if self._sessions[self.API_TYPE_REST] or self._sessions[self.API_TYPE_SOAP]:
       return False
+    else:
+      return True
 
   def get_api_version(self):
     """
