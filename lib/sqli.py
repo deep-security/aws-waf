@@ -268,8 +268,8 @@ class Script(core.ScriptContext):
       sqli_recommended = True
 
     if 'application_type_id' in dir(rule):
-      if self.dsm.rules['application_types'].has_key(rule.application_type_id):
-        if self.dsm.rules['application_types'][rule.application_type_id].tbuid in self.tbuids:
+      if self.dsm.rules['application_type'].has_key(rule.application_type_id):
+        if self.dsm.rules['application_type'][rule.application_type_id].tbuid in self.tbuids:
           sqli_recommended = True
 
     for pattern in self.patterns:
@@ -294,28 +294,38 @@ class Script(core.ScriptContext):
     computer = self.dsm.computers[ds_computer_id]
     sqli_recommendations = []
 
+    is_aws_instance = False
+    aws_instance_id = None
     if 'cloud_instance_id' in dir(computer) and computer.cloud_instance_id and computer.cloud_instance_id.startswith('i-'):
+      is_aws_instance = True
+      aws_instance_id = computer.cloud_instance_id
+    elif 'cloud_object_instance_id' in dir(computer) and computer.cloud_object_instance_id and computer.cloud_object_instance_id.startswith('i-'):
+      is_aws_instance = True
+      aws_instance_id = computer.cloud_object_instance_id
+
+    if is_aws_instance:
       # this is an AWS instance
+      self._log("Computer is an AWS instance")
           
       # check at the policy level
-      if computer.policy_id:
+      if computer.security_profile_id:
         self._log("Computer is protected by Deep Security. Checking rules")
         for rule_type in [
-          'application_type',
-          'integrity_monitoring',
-          'log_inspection',
-          'intrusion_prevention',
+          'application_type_ids',
+          'integrity_monitoring_rule_ids',
+          'log_inspection_rule_ids',
+          'intrusion_prevention_rule_ids',
           ]:
-          if self.dsm.policies.has_key(computer.policy_id):
-            rule_set = getattr(self.dsm.policies[computer.policy_id], rule_type)
+          if self.dsm.policies.has_key(int(computer.security_profile_id)):
+            rule_set = getattr(self.dsm.policies[int(computer.security_profile_id)], rule_type)
             if rule_set and rule_set.has_key('item'): # policy has these type of rules applied
               for rule_id in rule_set['item']:
                 rule = self.dsm.rules[rule_type.replace('_rule_ids', '')][int(rule_id)]
                 if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
             else:
-              self._log("Instance {} has no rules of type {} applied".format(computer.cloud_instance_id, rule_type))
+              self._log("Instance {} has no rules of type {} applied".format(aws_instance_id, rule_type))
           else:
-            self._log("Policy {} is not available for analysis".format(computer.policy_id))
+            self._log("Policy {} is not available for analysis".format(int(computer.security_profile_id)))
       else:
         self._log("Deep Security is aware of the instance but is not protecting it with a policy")
         recommendation = None
@@ -327,7 +337,7 @@ class Script(core.ScriptContext):
           for rule_id, rule in rules.items():
             if self.does_rule_match_sqli(rule): sqli_recommendations.append(rule)
       else:
-        self._log("There are no rule recommendations for instance {}".format(computer.cloud_instance_id))
+        self._log("There are no rule recommendations for instance {}".format(aws_instance_id))
 
     if len(sqli_recommendations) > 1:
       recommendation = True if len(sqli_recommendations) > 0 else False
