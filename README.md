@@ -360,3 +360,27 @@ If you run the script with the ```--create-rule``` option, the script will creat
 With this option enabled, you will start to incur charges from AWS for as long as the rule is associated with a WACL. Please refer to the [AWS WAF Pricing](http://aws.amazon.com/waf/pricing/) page for the latest information.
 
 The script can be run in ```--dryrun``` to see the end result before pushing the match set to AWS. This can help you get a better idea of what is being created.
+
+## Support
+
+This is an Open Source community project. Project contributors may be able to help, 
+depending on their time and availability. Please be specific about what you're 
+trying to do, your system, and steps to reproduce the problem.
+
+For bug reports or feature requests, please 
+[open an issue](../issues). 
+You are welcome to [contribute](#contribute).
+
+Official support from Trend Micro is not available. Individual contributors may be 
+Trend Micro employees, but are not official support.
+
+## Contribute
+
+We accept contributions from the community. To submit changes:
+
+1. Fork this repository.
+1. Create a new feature branch.
+1. Make your changes.
+1. Submit a pull request with an explanation of your changes or additions.
+
+We will review and work with you to release the code.
