@@ -1,40 +1,34 @@
-> This commit has breaking changes that will stay firm moving forward. For original, early adopters please use [release v0.91](https://github.com/deep-security/aws-waf/releases/tag/v0.91)...but move to the current one when you can, it's **way better** ;-)
-
 # Deep Security AWS WAF Integration
 
 A simple tool set to help build AWS WAF rule sets based on intelligence from Deep Security. 
 
-## Support
-
-This is a community project and while you will see contributions from the Deep Security team, there is no official Trend Micro support for this project. The official documentation for the Deep Security APIs is available from the [Trend Micro Online Help Centre](http://docs.trendmicro.com/en-us/enterprise/deep-security.aspx). 
-
-Tutorials, feature-specific help, and other information about Deep Security is available from the [Deep Security Help Center](https://help.deepsecurity.trendmicro.com/Welcome.html). 
-
-For Deep Security specific issues, please use the regular Trend Micro support channels. For issues with the code in this repository, please [open an issue here on GitHub](https://github.com/deep-security/aws-waf/issues).
+** Note: This release has breaking changes.** For original, early adopters please use [release v0.91](https://github.com/deep-security/aws-waf/releases/tag/v0.91)...but move to the current one when you can. It's **way better.** ;-)
 
 
-## Index
+## Table of Contents
 
-- [Pre-Requisites](#pre-requisites)
-- [Usage](#usage)
-   - [iplists](#usage-iplists)
-   - [sqli & xss](#usage-sqli-xss)
-- [SSL Certificate Validation](#ssl-certificate-validation)
-- [AWS WAF Costs](#aws-waf-costs)
-  - [iplists](#aws-waf-costs-iplists)
-  - [sqli & xss](#aws-waf-costs-sqli-xss)
+* [Requirements](#requirements)
+* [Usage](#usage)
+   * [iplists](#usage-iplists)
+   * [sqli & xss](#usage-sqli-xss)
+   * [SSL Certificate Validation](#ssl-certificate-validation)
+* [AWS WAF Costs](#aws-waf-costs)
+  * [iplists](#aws-waf-costs-iplists)
+  * [sqli & xss](#aws-waf-costs-sqli-xss)
+* [Support](#support)
+* [Contribute](#contribute)
 
-<a name="pre-requisites" />
 
-## Pre-Requisites
+## Requirements
+
+Python is required. Also install the package dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-<a name="usage" />
 
-### Usage
+## Usage
 
 The syntax for basic command line usage is available by using the ```--help``` switch.
 
@@ -53,7 +47,7 @@ usage: ds-to-aws-waf [COMMAND]
       > Determine which instances protected by Deep Security should also be protected by AWS WAF SQLi rules
 ```
 
-Each script in this set works under a common structure. There are several shared arguments;
+Each script in this set works under a common structure. There are several shared arguments:
 
 ```bash
   -h, --help            show this help message and exit
@@ -114,7 +108,7 @@ Currently Deep Security treats API access just like a user logging in. Therefore
 
 The iplists command is a simple, two-step process. You must first find the ID of the list in Deep Security and then push that IP list to an AWS WAF IP set.
 
-**Step 1;**
+**Step 1:**
 
 ```
 # list the available IP lists in Deep Security
@@ -127,7 +121,7 @@ python ds-to-aws-waf.py iplists -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-
 
 This command will then display a list of IP lists and their associated IDs. You can then use those IDs to push the IP list to AWS WAF as an IP Set.
 
-**Step 2;**
+**Step 2:**
 
 ```
 # push a Deep Security IP list to an AWS WAF IP Set
@@ -200,7 +194,7 @@ The sqli and xss commands contain two parts; the analysis of the workloads on th
 
 You can run either part separately, though **the creation of the match condition only needs to be run once per account.**
 
-Common usage;
+Common usage:
 
 ```
 # create a new SQLi or XSS match condition 
@@ -236,7 +230,7 @@ python ds-to-aws-waf.py xss -u WAF -p PASSWORD -d DSM_HOSTNAME --ignore-ssl-vali
 
 ```
 
-The complete command syntax is;
+The complete command syntax is:
 
 ```
 usage: ds-to-aws-waf.py (sqli|xss) [-h] [-d DSM] [--dsm-port DSM_PORT] -u
@@ -296,15 +290,15 @@ optional arguments:
 
 <a name="ssl-certificate-validation" />
 
-## SSL Certificate Validation
+### SSL Certificate Validation
 
-If the Deep Security Manager (DSM) you're connecting to was installed via software of the AWS Marketplace, there's a chance that it is still using the default, self-signed SSL certificate. By default, python checks the certificate for validity which it cannot do with self-signed certificates.
+If the Deep Security Manager you're connecting to was installed via software in AWS Marketplace, it might be using the default, self-signed SSL certificate. By default, Python checks the certificate for validity. Validation fails with self-signed certificates.
 
 If you are using self-signed certificates, please use the new ```--ignore-ssl-validation``` command line flag.
 
-When you use this flag, you're telling python to ignore any certificate warnings. These warnings should be due to the self-signed certificate but *could* be for other reasons. It is strongly recommended that you have alternative mitigations in place to secure your DSM. 
+When you use this flag, you're telling Python to ignore any certificate warnings. These warnings should be due to the self-signed certificate but *could* be for other reasons. It is strongly recommended that you have alternative mitigations in place to secure your Deep Security Manager. 
 
-When the flag is set, you'll see this warning block;
+When the flag is set, you'll see this warning block:
 
 ```bash
 ***********************************************************************
@@ -321,13 +315,13 @@ When the flag is set, you'll see this warning block;
 ***********************************************************************
 ```
 
-And during execution you may see lines similar to;
+And during execution you may see lines similar to:
 
 ```python
 .../requests/packages/urllib3/connectionpool.py:789: InsecureRequestWarning: Unverified HTTPS request is being made. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.org/en/latest/security.html
 ```
 
-These are expected warnings. Can you tell that we (and the python core teams) are trying to tell you something? If you're interesting in using a valid SSL certificate, you can get one for free from [Let's Encrypt](https://letsencrypt.org), [AWS themselves](https://aws.amazon.com/certificate-manager/) (if your DSM is behind an ELB), or explore commercial options (like the [one from Trend Micro](http://www.trendmicro.com/us/enterprise/cloud-solutions/deep-security/ssl-certificates/)).
+These are expected warnings. Can you tell that we (and the Python core teams) are trying to tell you something? If you're interesting in using a valid SSL certificate, you can get one for free from [Let's Encrypt](https://letsencrypt.org), [AWS themselves](https://aws.amazon.com/certificate-manager/) (if your Deep Security Manager is behind an ELB), or explore commercial options (like the [one from Trend Micro](http://www.trendmicro.com/us/enterprise/cloud-solutions/deep-security/ssl-certificates/)).
 
 <a name="aws-waf-costs" />
 
@@ -360,3 +354,27 @@ If you run the script with the ```--create-rule``` option, the script will creat
 With this option enabled, you will start to incur charges from AWS for as long as the rule is associated with a WACL. Please refer to the [AWS WAF Pricing](http://aws.amazon.com/waf/pricing/) page for the latest information.
 
 The script can be run in ```--dryrun``` to see the end result before pushing the match set to AWS. This can help you get a better idea of what is being created.
+
+## Support
+
+This is an Open Source community project. Project contributors may be able to help, 
+depending on their time and availability. Please be specific about what you're 
+trying to do, your system, and steps to reproduce the problem.
+
+For bug reports or feature requests, please 
+[open an issue](../issues). 
+You are welcome to [contribute](#contribute).
+
+Official support from Trend Micro is not available. Individual contributors may be 
+Trend Micro employees, but are not official support.
+
+## Contribute
+
+We accept contributions from the community. To submit changes:
+
+1. Fork this repository.
+1. Create a new feature branch.
+1. Make your changes.
+1. Submit a pull request with an explanation of your changes or additions.
+
+We will review and work with you to release the code.
